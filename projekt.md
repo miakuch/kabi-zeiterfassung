@@ -64,7 +64,7 @@ Nach dem Login landet jeder Nutzer auf **Zeiten**.
 
 Die App uebernimmt Farben, Logo und typografische Anmutung von KABI Consulting, wird aber als ruhige Arbeits-App umgesetzt. Die Oberflaeche ist hell, kompakt und tabellenfreundlich. Ein Dark Mode und PWA-Installation sind nicht Teil von V1.
 
-Das KABI-Logo wird als statisches Asset im Repo abgelegt und fuer Login, App-Branding und Zeitnachweise verwendet.
+Das KABI-Logo wird als statisches Asset im Repo abgelegt und fuer Login, App-Branding und Zeitnachweise verwendet. Als Quellasset wurde `Logo_KABI_farbig.png` festgelegt; im Repo soll es z. B. unter `public/logo-kabi.png` liegen.
 
 ## Zeiterfassung
 
@@ -425,9 +425,8 @@ Nicht Teil von V1:
 
 ## Offene praktische Voraussetzungen
 
-- KABI-Logo ins Repo kopieren
-- Supabase DEV/PROD Umgebungswerte eintragen
-- SMTP-Zugang fuer Magic Links einrichten
-- `INITIAL_ADMIN_EMAIL` festlegen
-- Vercel-Projekt anlegen
-- Subdomain `zeiterfassung.kabi-consulting.de` spaeter per DNS-CNAME auf Vercel zeigen lassen
+- KABI-Logo `Logo_KABI_farbig.png` als statisches Asset ins Repo kopieren, z. B. `public/logo-kabi.png`
+- Datenbank-Migrationen fuer Tabellen, Beziehungen, Indizes, Grants, RLS-Policies und ersten Admin erstellen
+- App-Geruest und Supabase-Client final anbinden
+- Vercel Production-Domain in Vercel gegenpruefen; aktueller Start ist ueber `https://kabi-zeiterfassung-kabmia.vercel.app` vorgesehen
+- Eigene Subdomain `zeiterfassung.kabi-consulting.de` ist fuer den aktuellen Start zurueckgestellt

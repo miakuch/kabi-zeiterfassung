@@ -4,11 +4,14 @@
 
 node_modules/
 .next/
+.archive/
 out/
 dist/
 coverage/
 playwright-report/
 test-results/
+tsconfig.tsbuildinfo
+.pnpm-store/
 
 .DS_Store
 *.log

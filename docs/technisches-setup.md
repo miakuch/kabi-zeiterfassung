@@ -38,6 +38,25 @@ Supabase-Projekteinstellungen:
 
 Folge: Migrationen muessen explizite `GRANT`-Statements und RLS-Policies enthalten.
 
+## Supabase Auth Redirect URLs
+
+KABI DEV:
+
+- Site URL: `http://localhost:3000`
+- Additional Redirect URLs:
+  - `http://localhost:3000/**`
+  - `https://*-kabmia.vercel.app/**`
+
+KABI PROD:
+
+- Site URL: `https://kabi-zeiterfassung-kabmia.vercel.app`
+- Additional Redirect URLs:
+  - `https://kabi-zeiterfassung-kabmia.vercel.app/**`
+
+Die exakte Production-Domain muss in Vercel unter Project -> Settings -> Domains
+gegengeprueft werden. Wenn Vercel dort eine andere Production-Domain anzeigt,
+gilt diese Domain fuer KABI PROD und `NEXT_PUBLIC_APP_URL`.
+
 ## Lokale Umgebungsdatei
 
 Lokal wird `.env.local` verwendet. Diese Datei darf nicht ins Git-Repository.
@@ -57,10 +76,26 @@ Der Service-Role-Key ist nur fuer serverseitige Logik erlaubt und darf niemals i
 ## Auth
 
 - Magic Link only
-- eigener SMTP-Absender
+- eigener SMTP-Absender ueber Custom SMTP
 - keine freie Registrierung
 - erster Admin ueber `INITIAL_ADMIN_EMAIL`
 - Login nur fuer aktive, bekannte Mitarbeitende
+
+SMTP fuer Supabase Auth:
+
+- Sender email: `zeiterfassung@kabi-consulting.de`
+- Sender name: `KABI Zeiterfassung`
+- Hetzner/konsoleH SMTP Host: `mail.your-server.de`
+- Port: `587`
+- Verschluesselung: STARTTLS/TLS
+- Username: vollstaendige Mailadresse
+- Password: Mailbox-Passwort, niemals Hetzner-Login
+
+Fallback, falls Supabase nur SSL/TLS ohne STARTTLS akzeptiert:
+
+- Host: `mail.your-server.de`
+- Port: `465`
+- Verschluesselung: SSL/TLS
 
 ## Sicherheit
 
@@ -90,8 +125,31 @@ Laufende Timer:
 
 Start mit Vercel Hobby.
 
-Produktive Subdomain spaeter:
+Aktuelle Production-Domain fuer den Start:
 
-`zeiterfassung.kabi-consulting.de`
+`https://kabi-zeiterfassung-kabmia.vercel.app`
 
-Die Hauptwebsite kann bei Hetzner bleiben. Nur die Subdomain wird per DNS-CNAME auf Vercel gezeigt.
+Vercel Preview-URLs verwenden den Account-/Team-Slug `kabmia`, z. B.
+`https://kabi-zeiterfassung-l04eqfd5p-kabmia.vercel.app/`. Deshalb ist fuer
+KABI DEV die Wildcard `https://*-kabmia.vercel.app/**` erlaubt.
+
+Eine eigene Subdomain `zeiterfassung.kabi-consulting.de` ist fuer den aktuellen
+Start zurueckgestellt. Falls sie spaeter genutzt wird, muessen Vercel Domains,
+Supabase Redirect URLs und `NEXT_PUBLIC_APP_URL` angepasst werden.
+
+## GitHub und Codex-Arbeitsumgebung
+
+Aktiver GitHub-Remote:
+
+`https://github.com/miakuch/kabi-zeiterfassung.git`
+
+GitHub-CLI und lokaler Git-Zugang sollen als `miakuch` angemeldet sein, nicht
+als `berndkuch`.
+
+Damit Codex kuenftig eigenstaendig committen, pushen, Pakete installieren oder
+CLI-Tools mit Netzwerk nutzen kann, sollte die Arbeitsumgebung mit diesen
+Rechten gestartet werden:
+
+- Schreibzugriff auf den Workspace inklusive `.git`
+- Terminal-Netzwerkzugriff
+- GitHub-Zugang als `miakuch`

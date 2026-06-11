@@ -49,9 +49,9 @@ KABI DEV:
 
 KABI PROD:
 
-- Site URL: `https://kabi-zeiterfassung-kabmia.vercel.app`
+- Site URL: `https://kabi-zeiterfassung.vercel.app`
 - Additional Redirect URLs:
-  - `https://kabi-zeiterfassung-kabmia.vercel.app/**`
+  - `https://kabi-zeiterfassung.vercel.app/**`
 
 Die exakte Production-Domain muss in Vercel unter Project -> Settings -> Domains
 gegengeprueft werden. Wenn Vercel dort eine andere Production-Domain anzeigt,
@@ -127,15 +127,16 @@ Start mit Vercel Hobby.
 
 Aktuelle Production-Domain fuer den Start:
 
-`https://kabi-zeiterfassung-kabmia.vercel.app`
+`https://kabi-zeiterfassung.vercel.app`
 
 Vercel Preview-URLs verwenden den Account-/Team-Slug `kabmia`, z. B.
 `https://kabi-zeiterfassung-l04eqfd5p-kabmia.vercel.app/`. Deshalb ist fuer
 KABI DEV die Wildcard `https://*-kabmia.vercel.app/**` erlaubt.
 
 Eine eigene Subdomain `zeiterfassung.kabi-consulting.de` ist fuer den aktuellen
-Start zurueckgestellt. Falls sie spaeter genutzt wird, muessen Vercel Domains,
-Supabase Redirect URLs und `NEXT_PUBLIC_APP_URL` angepasst werden.
+Start zurueckgestellt und in Vercel nicht mehr hinterlegt. Falls sie spaeter
+genutzt wird, muessen Vercel Domains, Supabase Redirect URLs und
+`NEXT_PUBLIC_APP_URL` angepasst werden.
 
 ## GitHub und Codex-Arbeitsumgebung
 

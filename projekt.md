@@ -428,5 +428,5 @@ Nicht Teil von V1:
 - KABI-Logo `Logo_KABI_farbig.png` als statisches Asset ins Repo kopieren, z. B. `public/logo-kabi.png`
 - Datenbank-Migrationen fuer Tabellen, Beziehungen, Indizes, Grants, RLS-Policies und ersten Admin erstellen
 - App-Geruest und Supabase-Client final anbinden
-- Vercel Production-Domain in Vercel gegenpruefen; aktueller Start ist ueber `https://kabi-zeiterfassung-kabmia.vercel.app` vorgesehen
+- Vercel Production-Domain in Vercel gegenpruefen; aktueller Start ist ueber `https://kabi-zeiterfassung.vercel.app` vorgesehen
 - Eigene Subdomain `zeiterfassung.kabi-consulting.de` ist fuer den aktuellen Start zurueckgestellt

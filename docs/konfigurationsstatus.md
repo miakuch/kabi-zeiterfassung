@@ -54,7 +54,7 @@ Der Service-Role-Key ist nur serverseitig erlaubt und darf nie mit
 - Vercel Account-/Team-Slug: `kabmia`
 - Beispiel Preview URL: `https://kabi-zeiterfassung-l04eqfd5p-kabmia.vercel.app/`
 - Production startet ueber eine Vercel-Domain.
-- Erwartete Production-Domain: `https://kabi-zeiterfassung-kabmia.vercel.app`
+- Aktuelle Production-Domain laut Vercel Domains: `https://kabi-zeiterfassung.vercel.app`
 
 Die tatsaechliche Production-Domain muss in Vercel unter Project -> Settings ->
 Domains geprueft werden. Wenn sie anders lautet, ist die Vercel-Anzeige
@@ -83,10 +83,10 @@ KABI PROD:
 
 ```text
 Site URL:
-https://kabi-zeiterfassung-kabmia.vercel.app
+https://kabi-zeiterfassung.vercel.app
 
 Additional Redirect URLs:
-https://kabi-zeiterfassung-kabmia.vercel.app/**
+https://kabi-zeiterfassung.vercel.app/**
 ```
 
 Wenn spaeter eine eigene Subdomain genutzt wird, muessen Site URL, Additional
@@ -95,8 +95,9 @@ Redirect URLs und `NEXT_PUBLIC_APP_URL` gemeinsam geaendert werden.
 ## Domain
 
 Die eigene Subdomain `zeiterfassung.kabi-consulting.de` wurde fachlich als gute
-Option bewertet, ist aber fuer den aktuellen Start zurueckgestellt. Production
-bleibt vorerst bei der Vercel-Domain.
+Option bewertet, ist aber fuer den aktuellen Start zurueckgestellt und in Vercel
+aus den Domains entfernt. Production bleibt vorerst bei der Vercel-Domain
+`https://kabi-zeiterfassung.vercel.app`.
 
 ## Supabase SMTP
 

@@ -1,6 +1,6 @@
 # Konfigurationsstatus
 
-Stand: 2026-06-11
+Stand: 2026-06-12
 
 Diese Datei fasst die technischen Entscheidungen und erledigten
 Konfigurationspunkte aus dem Nachlauf des Interviews zusammen. Sie ist kein
@@ -62,6 +62,8 @@ Request-Domain ableitet.
 - Vercel wird per `vercel.json` als Next.js-Projekt konfiguriert.
 - Eine alte Output-Directory-Einstellung auf `public` ist fuer die Next.js-App
   falsch; im Repository ist `outputDirectory` deshalb auf `null` gesetzt.
+- Vercel Preview laeuft ohne festes `NEXT_PUBLIC_APP_URL`; Magic-Link-Redirects
+  werden aus der aktuellen Request-Domain gebildet.
 
 Die tatsaechliche Production-Domain muss in Vercel unter Project -> Settings ->
 Domains geprueft werden. Wenn sie anders lautet, ist die Vercel-Anzeige
@@ -152,8 +154,6 @@ Verwendung:
 ## Noch offen
 
 - Logo-Datei in `public/` uebernehmen.
-- Datenbank-Migrationen fuer Schema, Grants und RLS erstellen.
-- Ersten Admin ueber `INITIAL_ADMIN_EMAIL` in der App-Logik abbilden.
 - Vercel Production-Domain in der Vercel-UI final gegenpruefen.
 - Supabase Redirect URLs erneut pruefen, sobald die echte Production-Domain feststeht.
-- App-Geruest und Supabase-Client finalisieren.
+- Projektverwaltung, Aufgaben und Freigaben fachlich ausbauen.

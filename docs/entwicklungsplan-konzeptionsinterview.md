@@ -1,6 +1,6 @@
 # Entwicklungsplan aus dem Konzeptionsinterview
 
-Stand: 2026-06-11
+Stand: 2026-06-12
 
 Dieser Plan uebersetzt `docs/interview-konzeption.md`, `docs/projektmanifest.md`,
 `projekt.md`, `docs/datenmodell.md`, `docs/technisches-setup.md` und
@@ -8,6 +8,21 @@ Dieser Plan uebersetzt `docs/interview-konzeption.md`, `docs/projektmanifest.md`
 
 Ziel: KABI Zeiterfassung vollstaendig gemaess Konzeptionsinterview umsetzen,
 ohne unterwegs Funktionen einzubauen, die ausdruecklich nicht Teil von V1 sind.
+
+## Aktueller Umsetzungsstand
+
+- Sprint 1 ist umgesetzt: Next.js-Grundlage, Tailwind/shadcn-Basis,
+  Environment-Validierung und Vercel-Konfiguration stehen.
+- Sprint 2 ist umgesetzt: Supabase-Migrationen, Grants/RLS, Magic-Link-Login,
+  Callback und erster Admin ueber `INITIAL_ADMIN_EMAIL` stehen.
+- Sprint 3 ist begonnen: geschuetztes App-Layout, Rollen-Navigation,
+  serverseitige Guards fuer aktive Mitarbeitende und Admin-Routen sowie
+  Platzhalterseiten fuer `Zeiten`, `Berichte`, `Projekte`, `Kunden` und
+  `Mitarbeitende` stehen.
+- Sprint 4 ist begonnen: die Kundenverwaltung ist als erste Admin-
+  Stammdatenfunktion umgesetzt; die Mitarbeitendenverwaltung ist ebenfalls
+  umgesetzt.
+- Naechster fachlicher Schritt ist Aufgabe 4.3: Projektuebersicht.
 
 ## Grundsatz
 
@@ -164,6 +179,8 @@ Jeder Sprint muss am Ende lauffaehig, pruefbar und demo-faehig sein.
 - **Beschreibung:** Desktop-Sidebar, mobile einklappbare Navigation, Header und
   Rollenanzeige.
 - **Abhaengigkeiten:** Sprint 2
+- **Status:** umgesetzt als erste Shell-Version mit Desktop-Sidebar,
+  mobilem Menue, Header, Rollenanzeige und Abmeldung.
 - **Akzeptanzkriterien:**
   - Desktop/Tablet priorisiert.
   - Smartphone solide bedienbar.
@@ -176,6 +193,9 @@ Jeder Sprint muss am Ende lauffaehig, pruefbar und demo-faehig sein.
 - **Beschreibung:** Server-seitige Guard-Funktionen fuer Admin- und
   Mitarbeitendenbereiche.
 - **Abhaengigkeiten:** Aufgabe 3.1
+- **Status:** umgesetzt fuer aktive Mitarbeitende und Admin-Bereiche.
+  Admin-Routen liegen unter `app/(app)/(admin)/` und werden serverseitig
+  blockiert, wenn die Rolle nicht `admin` ist.
 - **Akzeptanzkriterien:**
   - UI blendet nicht erlaubte Navigation aus.
   - Server blockiert unberechtigte Route-Zugriffe.
@@ -196,6 +216,9 @@ Jeder Sprint muss am Ende lauffaehig, pruefbar und demo-faehig sein.
 - **Beschreibung:** Einfache Liste mit Name, Status, Anlegen/Bearbeiten,
   Deaktivieren und Warnung bei aktiven Projekten.
 - **Abhaengigkeiten:** Sprint 3
+- **Status:** umgesetzt mit Server Actions, Pflichtvalidierung,
+  Aktivieren/Deaktivieren und Warnung bei aktiven Projekten ohne automatische
+  Deaktivierung von Projekten oder Aufgaben.
 - **Akzeptanzkriterien:**
   - Kundenname Pflicht.
   - Verwendete Kunden werden deaktiviert statt geloescht.
@@ -207,6 +230,8 @@ Jeder Sprint muss am Ende lauffaehig, pruefbar und demo-faehig sein.
 - **Ort:** `app/(app)/mitarbeitende/`, `features/employees/`
 - **Beschreibung:** Liste mit Name, E-Mail, Rolle, Status.
 - **Abhaengigkeiten:** Sprint 3
+- **Status:** umgesetzt mit Server Actions, Validierung, Aktivieren/
+  Deaktivieren, Rollenwechsel und letzter-aktiver-Admin-Regel.
 - **Akzeptanzkriterien:**
   - Mehrere Admins erlaubt.
   - Letzter aktiver Admin kann sich nicht deaktivieren/degradieren.

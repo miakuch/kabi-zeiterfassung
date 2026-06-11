@@ -84,6 +84,10 @@ wird. Dadurch bleiben wechselnde Vercel-Preview-URLs funktionsfaehig.
 - keine freie Registrierung
 - erster Admin ueber `INITIAL_ADMIN_EMAIL`
 - Login nur fuer aktive, bekannte Mitarbeitende
+- Start nach erfolgreichem Login: `/zeiten`
+- App-Routen unter `app/(app)/` sind serverseitig geschuetzt
+- Admin-Routen unter `app/(app)/(admin)/` werden zusaetzlich auf Rolle
+  `admin` geprueft
 
 SMTP fuer Supabase Auth:
 

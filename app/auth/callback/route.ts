@@ -41,5 +41,5 @@ export async function GET(request: NextRequest) {
     redirect("/login?error=login-nicht-erlaubt");
   }
 
-  return NextResponse.redirect(new URL("/", requestUrl.origin));
+  return NextResponse.redirect(new URL("/zeiten", requestUrl.origin));
 }

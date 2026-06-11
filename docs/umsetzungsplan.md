@@ -69,3 +69,20 @@
 - responsive Feinarbeit fuer Desktop, Tablet und Smartphone
 - Budgethinweise in Projektuebersicht
 - finale Text- und UI-Politur
+
+## Aktueller Stand
+
+- Phase 1 ist erledigt.
+- Phase 2 ist erledigt inklusive rollenbasierter Grundnavigation und
+  serverseitiger Routen-Guards.
+- Die App-Shell fuer Sprint 3 ist angelegt: `Zeiten` und `Berichte` fuer alle
+  aktiven Nutzenden, `Projekte`, `Kunden` und `Mitarbeitende` nur fuer Admins.
+- Die Kundenverwaltung ist als erster Stammdatenbereich umgesetzt:
+  Kunden anlegen, Namen/Status bearbeiten, aktivieren und deaktivieren.
+- Beim Deaktivieren eines Kunden mit aktiven Projekten erscheint eine
+  Bestaetigung; Projekte und Aufgaben werden nicht automatisch deaktiviert.
+- Die Mitarbeitendenverwaltung ist umgesetzt: Mitarbeitende anlegen,
+  Name/E-Mail/Rolle/Status bearbeiten, aktivieren und deaktivieren.
+- Der letzte aktive Admin kann nicht deaktiviert oder zur Rolle Mitarbeitende
+  geaendert werden.
+- Naechster Entwicklungsschritt: Projektuebersicht.

@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { z } from "zod";
 import { getPublicEnv } from "@/lib/env";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -19,12 +20,19 @@ export async function requestMagicLink(formData: FormData) {
   }
 
   const env = getPublicEnv();
+  const requestHeaders = await headers();
+  const appUrl = requestHeaders.get("origin") ?? env.NEXT_PUBLIC_APP_URL;
+
+  if (!appUrl) {
+    redirect("/login?error=magic-link");
+  }
+
   const supabase = await createSupabaseServerClient();
 
   const { error } = await supabase.auth.signInWithOtp({
     email: parsed.data.email,
     options: {
-      emailRedirectTo: `${env.NEXT_PUBLIC_APP_URL}/auth/callback`,
+      emailRedirectTo: new URL("/auth/callback", appUrl).toString(),
     },
   });
 

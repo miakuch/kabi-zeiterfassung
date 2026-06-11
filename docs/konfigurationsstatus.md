@@ -49,6 +49,10 @@ Erwartete Variablen:
 Der Service-Role-Key ist nur serverseitig erlaubt und darf nie mit
 `NEXT_PUBLIC_` praefixiert werden.
 
+In Vercel Preview ist `NEXT_PUBLIC_APP_URL` optional, weil Preview-URLs pro
+Deployment wechseln und die App die Magic-Link-Redirect-URL aus der aktuellen
+Request-Domain ableitet.
+
 ## Vercel
 
 - Vercel Account-/Team-Slug: `kabmia`

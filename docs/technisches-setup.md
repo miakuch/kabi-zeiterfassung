@@ -65,13 +65,17 @@ Vorlage: `.env.example`
 
 Wichtige Werte:
 
-- `NEXT_PUBLIC_APP_URL`
+- `NEXT_PUBLIC_APP_URL` fuer lokale Entwicklung und feste Production-Konfiguration
 - `INITIAL_ADMIN_EMAIL`
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
 
 Der Service-Role-Key ist nur fuer serverseitige Logik erlaubt und darf niemals im Browser-Code verwendet werden.
+
+Preview-Deployments duerfen ohne festes `NEXT_PUBLIC_APP_URL` laufen, weil die
+Magic-Link-Redirect-URL serverseitig aus der aktuellen Request-Domain gebildet
+wird. Dadurch bleiben wechselnde Vercel-Preview-URLs funktionsfaehig.
 
 ## Auth
 

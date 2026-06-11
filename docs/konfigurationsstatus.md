@@ -55,6 +55,9 @@ Der Service-Role-Key ist nur serverseitig erlaubt und darf nie mit
 - Beispiel Preview URL: `https://kabi-zeiterfassung-l04eqfd5p-kabmia.vercel.app/`
 - Production startet ueber eine Vercel-Domain.
 - Aktuelle Production-Domain laut Vercel Domains: `https://kabi-zeiterfassung.vercel.app`
+- Vercel wird per `vercel.json` als Next.js-Projekt konfiguriert.
+- Eine alte Output-Directory-Einstellung auf `public` ist fuer die Next.js-App
+  falsch; im Repository ist `outputDirectory` deshalb auf `null` gesetzt.
 
 Die tatsaechliche Production-Domain muss in Vercel unter Project -> Settings ->
 Domains geprueft werden. Wenn sie anders lautet, ist die Vercel-Anzeige

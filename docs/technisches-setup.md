@@ -129,6 +129,12 @@ Aktuelle Production-Domain fuer den Start:
 
 `https://kabi-zeiterfassung.vercel.app`
 
+Die Vercel-Projektkonfiguration liegt im Repository in `vercel.json`.
+Das Projekt wird explizit als Next.js-App gebaut. Eine alte Output-Directory-
+Einstellung aus der frueheren statischen App darf nicht auf `public` zeigen;
+`outputDirectory` wird deshalb in `vercel.json` bewusst auf `null` gesetzt,
+damit Vercel die Next.js-Defaults verwendet.
+
 Vercel Preview-URLs verwenden den Account-/Team-Slug `kabmia`, z. B.
 `https://kabi-zeiterfassung-l04eqfd5p-kabmia.vercel.app/`. Deshalb ist fuer
 KABI DEV die Wildcard `https://*-kabmia.vercel.app/**` erlaubt.

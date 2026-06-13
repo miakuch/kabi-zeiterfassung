@@ -1,4 +1,7 @@
 import { requireEmployeeSession } from "@/lib/auth/require-session";
+import { getProjectMonthExportData } from "@/features/exports/domain/queries";
+import { ExportPreviewPanel } from "@/features/exports/preview/export-preview-panel";
+import { resolveExportPreviewSelection } from "@/features/exports/preview/domain";
 import { ReportChart } from "@/features/reports/charts/report-chart";
 import { ReportFilters } from "@/features/reports/filters/report-filters";
 import { parseReportFilters } from "@/features/reports/filters/domain";
@@ -17,6 +20,8 @@ type ReportsPageProps = {
     customer?: string;
     employee?: string;
     end?: string;
+    exportMonth?: string;
+    exportProject?: string;
     project?: string;
     quick?: string;
     showAmounts?: string;
@@ -25,6 +30,15 @@ type ReportsPageProps = {
     group?: string;
   }>;
 };
+
+function preservedReportParams(params: Awaited<ReportsPageProps["searchParams"]>) {
+  return Object.entries(params)
+    .filter(([key, value]) => Boolean(value) && !key.startsWith("export"))
+    .map(([name, value]) => ({
+      name,
+      value: value as string,
+    }));
+}
 
 function paramsHref(
   params: Awaited<ReportsPageProps["searchParams"]>,
@@ -65,13 +79,28 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   const filters = parseReportFilters(params);
   const grouping = parseReportChartGrouping(params.group, employee.role);
   const showAmounts = employee.role === "admin" && params.showAmounts === "1";
-  const [options, overview] = await Promise.all([
+  const exportSelection = resolveExportPreviewSelection({
+    exportProjectId: params.exportProject,
+    exportMonth: params.exportMonth,
+    reportProjectId: filters.projectId,
+    reportStartDate: filters.startDate,
+    reportEndDate: filters.endDate,
+  });
+  const exportPreviewPromise =
+    employee.role === "admin" && exportSelection.projectId && exportSelection.month
+      ? getProjectMonthExportData({
+          projectId: exportSelection.projectId,
+          month: exportSelection.month,
+        })
+      : Promise.resolve(null);
+  const [options, overview, exportPreview] = await Promise.all([
     getReportFilterOptions(employee),
     getReportOverview({
       employee,
       filters,
       grouping,
     }),
+    exportPreviewPromise,
   ]);
 
   return (
@@ -98,6 +127,15 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
         data={overview.chartData}
         groupings={chartGroupLinks(params, overview.availableGroupings)}
       />
+
+      {employee.role === "admin" ? (
+        <ExportPreviewPanel
+          options={options}
+          preservedParams={preservedReportParams(params)}
+          preview={exportPreview}
+          selection={exportSelection}
+        />
+      ) : null}
 
       <ReportTable
         entries={overview.entries}

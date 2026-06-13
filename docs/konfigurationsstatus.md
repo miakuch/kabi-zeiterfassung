@@ -1,6 +1,6 @@
 # Konfigurationsstatus
 
-Stand: 2026-06-12
+Stand: 2026-06-13
 
 Diese Datei fasst die technischen Entscheidungen und erledigten
 Konfigurationspunkte aus dem Nachlauf des Interviews zusammen. Sie ist kein
@@ -59,6 +59,9 @@ Request-Domain ableitet.
 - Beispiel Preview URL: `https://kabi-zeiterfassung-l04eqfd5p-kabmia.vercel.app/`
 - Production startet ueber eine Vercel-Domain.
 - Aktuelle Production-Domain laut Vercel Domains: `https://kabi-zeiterfassung.vercel.app`
+- Smoke-Test am 2026-06-13: Die Production-Domain zeigt noch auf die alte
+  `main`-Testseite und `/login` liefert `404`. Fuer den V1-Start muss
+  Production auf den aktuellen App-Stand aus `dev` gebracht werden.
 - Vercel wird per `vercel.json` als Next.js-Projekt konfiguriert.
 - Eine alte Output-Directory-Einstellung auf `public` ist fuer die Next.js-App
   falsch; im Repository ist `outputDirectory` deshalb auf `null` gesetzt.
@@ -140,7 +143,7 @@ Quellasset:
 
 `Logo_KABI_farbig.png`
 
-Das Logo soll als statisches Asset ins Repo uebernommen werden, z. B.:
+Das Logo ist als statisches Asset ins Repo uebernommen:
 
 `public/logo-kabi.png`
 
@@ -153,8 +156,7 @@ Verwendung:
 
 ## Noch offen
 
-- Logo-Datei in `public/` uebernehmen.
 - Vercel Production-Domain in der Vercel-UI final gegenpruefen.
 - Supabase Redirect URLs erneut pruefen, sobald die echte Production-Domain feststeht.
-- Naechster fachlicher Ausbau: Exporte mit gemeinsamer Export-Datenstruktur,
-  Vorschau, Excel und PDF.
+- Deployment-Checkliste: `docs/deployment-checkliste.md`
+- Naechster fachlicher Ausbau: V1-Abnahme gegen das Konzeptionsinterview.

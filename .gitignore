@@ -4,6 +4,7 @@
 
 node_modules/
 .next/
+.vercel/
 .archive/
 out/
 dist/

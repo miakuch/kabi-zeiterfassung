@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import {
   BarChart3,
@@ -60,8 +61,17 @@ export function AppShell({ employee, children }: AppShellProps) {
     <div className="min-h-screen bg-background text-foreground">
       <aside className="fixed inset-y-0 left-0 hidden w-64 border-r bg-card px-4 py-5 lg:flex lg:flex-col">
         <div>
-          <p className="text-sm font-semibold tracking-normal">KABI</p>
-          <p className="mt-1 text-xs text-muted-foreground">Zeiterfassung</p>
+          <Image
+            alt="KABI Consulting"
+            className="h-auto w-36"
+            height={56}
+            priority
+            src="/logo-kabi.png"
+            width={144}
+          />
+          <p className="mt-2 text-xs font-medium text-muted-foreground">
+            Zeiterfassung
+          </p>
         </div>
 
         <div className="mt-8 flex-1">
@@ -99,9 +109,19 @@ export function AppShell({ employee, children }: AppShellProps) {
             </details>
 
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold">
-                KABI Zeiterfassung
-              </p>
+              <div className="flex items-center gap-3">
+                <Image
+                  alt="KABI Consulting"
+                  className="hidden h-auto w-24 sm:block"
+                  height={38}
+                  priority
+                  src="/logo-kabi.png"
+                  width={96}
+                />
+                <p className="truncate text-sm font-semibold">
+                  KABI Zeiterfassung
+                </p>
+              </div>
               <p className="truncate text-xs text-muted-foreground">
                 {employee.name} - {roleLabel}
               </p>

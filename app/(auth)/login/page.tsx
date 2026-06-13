@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { requestMagicLink } from "./actions";
 
 type LoginPageProps = {
@@ -21,7 +22,15 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   return (
     <main className="min-h-screen bg-background text-foreground">
       <section className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-6 py-16">
-        <p className="text-sm font-medium uppercase tracking-[0.16em] text-muted-foreground">
+        <Image
+          alt="KABI Consulting"
+          className="h-auto w-56"
+          height={87}
+          priority
+          src="/logo-kabi.png"
+          width={224}
+        />
+        <p className="mt-5 text-sm font-medium uppercase tracking-normal text-muted-foreground">
           KABI Zeiterfassung
         </p>
         <h1 className="mt-4 text-3xl font-semibold tracking-normal">

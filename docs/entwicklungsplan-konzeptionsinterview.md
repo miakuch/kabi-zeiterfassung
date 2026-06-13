@@ -30,7 +30,10 @@ ohne unterwegs Funktionen einzubauen, die ausdruecklich nicht Teil von V1 sind.
   vorhanden.
 - Sprint 7 ist umgesetzt: Globale Berichtsfilter, Kennzahlen, umschaltbares
   Diagramm und Berichtstabelle sind vorhanden.
-- Naechster fachlicher Schritt ist Sprint 8: Exporte.
+- Sprint 8 ist umgesetzt: Export-Datenstruktur, Exportvorschau im
+  Admin-Bericht, Excel-Export und PDF-Export sind umgesetzt und getestet.
+- Naechster fachlicher Schritt ist Sprint 9: Qualitaet, V1-Abschluss und
+  Startvorbereitung.
 
 ## Grundsatz
 
@@ -57,8 +60,8 @@ Jeder Sprint muss am Ende lauffaehig, pruefbar und demo-faehig sein.
 - `.env.local` mit KABI-DEV-Werten
 - `INITIAL_ADMIN_EMAIL` gesetzt
 - Supabase SMTP ist erledigt
-- Logo-Datei `Logo_KABI_farbig.png` liegt bereit und wird spaeter nach
-  `public/logo-kabi.png` uebernommen
+- Logo-Datei `Logo_KABI_farbig.png` ist als `public/logo-kabi.png` ins Repo
+  uebernommen und in Login, App-Shell sowie Zeitnachweis-Exports eingebunden
 
 ## Sprint 1: Technische Projektgrundlage
 
@@ -473,6 +476,9 @@ Jeder Sprint muss am Ende lauffaehig, pruefbar und demo-faehig sein.
 - **Ort:** `features/exports/domain/`
 - **Beschreibung:** Serverseitige Vorbereitung fuer Projekt-Monatszeitnachweis und
   Admin-Tabellenexport.
+- **Status:** Umgesetzt. Projekt + Monat werden in eine gemeinsame
+  Export-Datenstruktur mit Monatsspanne, sortierten abrechenbaren Eintraegen
+  und Summen ueberfuehrt.
 - **Abhaengigkeiten:** Sprint 7
 - **Akzeptanzkriterien:**
   - Nur komplette Kalendermonate fuer Zeitnachweis.
@@ -487,6 +493,9 @@ Jeder Sprint muss am Ende lauffaehig, pruefbar und demo-faehig sein.
 - **Ort:** `features/exports/preview/`
 - **Beschreibung:** Kompakte Vorschau mit Projekt, Monat, Anzahl abrechenbarer
   Eintraege, Summe Stunden, Mitarbeitende und kleiner Tabelle.
+- **Status:** Umgesetzt. Der Admin-Bericht hat einen eigenen Exportbereich mit
+  Projekt- und Monatsauswahl, Vorbefuellung aus den Berichtsfiltern, Warnung
+  bei leerem Zeitnachweis und kompakter Vorschautabelle.
 - **Abhaengigkeiten:** Aufgabe 8.1
 - **Akzeptanzkriterien:**
   - Warnung bei null abrechenbaren Eintraegen.
@@ -498,6 +507,9 @@ Jeder Sprint muss am Ende lauffaehig, pruefbar und demo-faehig sein.
 
 - **Ort:** `features/exports/excel/`
 - **Beschreibung:** ExcelJS-Zeitnachweis mit formatiertem Blatt und Rohdatenblatt.
+- **Status:** Umgesetzt. Der Admin-Bericht bietet fuer nicht leere
+  Zeitnachweise einen direkten `.xlsx`-Download mit sichtbarem
+  Zeitnachweisblatt und Rohdatenblatt ohne finanzielle Daten.
 - **Abhaengigkeiten:** Aufgabe 8.1
 - **Akzeptanzkriterien:**
   - Sichtbares Blatt: Datum, Arbeitszeit, Beschreibung, Name.
@@ -510,6 +522,10 @@ Jeder Sprint muss am Ende lauffaehig, pruefbar und demo-faehig sein.
 
 - **Ort:** `features/exports/pdf/`
 - **Beschreibung:** React-PDF-Zeitnachweis im Layout der Vorlage.
+- **Status:** Umgesetzt. Der Admin-Bericht bietet fuer nicht leere
+  Zeitnachweise einen direkten PDF-Download mit Kopf, KABI-Logo,
+  Projekt-/Zeitraum-/Stundensumme, Tabelle, wiederholbarem Tabellenkopf und
+  Seitenzaehler.
 - **Abhaengigkeiten:** Aufgabe 8.1
 - **Akzeptanzkriterien:**
   - Kopf: ZEITNACHWEIS, Projekt, Zeitraum, Monatsstunden, Logo oben rechts.
@@ -534,6 +550,10 @@ Jeder Sprint muss am Ende lauffaehig, pruefbar und demo-faehig sein.
 - **Ort:** `tests/`, `*.test.ts`, `e2e/`
 - **Beschreibung:** Vitest fuer Kernlogik, schlanke Playwright-Flows fuer Login,
   Zeiterfassung und Export.
+- **Status:** Umgesetzt fuer lokale V1-Qualitaetsschicht. Vitest deckt
+  Kernlogik, Berichte, Exporte und Export-Routen ab; Browser-Smokes sind in
+  `docs/testabdeckung.md` dokumentiert. Vollautomatische E2E-Flows mit
+  vorbereiteter Admin-Sitzung bleiben spaetere CI-Erweiterung.
 - **Abhaengigkeiten:** Sprints 5 bis 8
 - **Akzeptanzkriterien:**
   - Dauer/Rundung/Ueberschneidung/Budget/Exportdaten getestet.
@@ -544,6 +564,10 @@ Jeder Sprint muss am Ende lauffaehig, pruefbar und demo-faehig sein.
 
 - **Ort:** Vercel, Supabase, `.env.example`, Dokumentation
 - **Beschreibung:** Preview nutzt KABI DEV, Production nutzt KABI PROD.
+- **Status:** Lokal vorbereitet; Production-Blocker identifiziert.
+  `vercel.json`, `.env.example`, `.gitignore`, Secret-Scan und Build sind
+  geprueft. Der Production-Smoke zeigt noch die alte `main`-Testseite; Details
+  und Dashboard-Kontrollen stehen in `docs/deployment-checkliste.md`.
 - **Abhaengigkeiten:** Sprint 8
 - **Akzeptanzkriterien:**
   - Redirect URLs passen.

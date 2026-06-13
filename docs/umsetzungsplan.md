@@ -120,5 +120,33 @@
   gefilterten Eintraegen ohne Pagination, Standard-Sortierung neueste Eintraege
   zuerst, sortierbaren Spalten, Admin-Mitarbeitendenspalte und bewusst
   aktivierbarer Admin-Betragsspalte.
-- Naechster Entwicklungsschritt: Sprint 8 Exporte mit gemeinsamer
-  Export-Datenstruktur.
+- Sprint 8 ist begonnen: Die gemeinsame Export-Datenstruktur fuer den
+  Projekt-Monatszeitnachweis ist umgesetzt. Sie bereitet genau ein Projekt und
+  einen kompletten Kalendermonat vor, beruecksichtigt nur abrechenbare
+  Eintraege, sortiert nach Datum, Startzeit und Name und enthaelt keine
+  Stundensaetze oder Betraege.
+- Die Exportvorschau ist im Admin-Bericht umgesetzt: eigener Exportbereich,
+  Vorbefuellung aus Projekt-/Monatsfiltern, unabhaengige Auswahl,
+  Monatskennzahlen, Mitarbeitendenuebersicht, kompakte Tabelle und Warnung bei
+  null abrechenbaren Eintraegen.
+- Der Excel-Export ist umgesetzt: serverseitige `.xlsx`-Erzeugung mit
+  Zeitnachweisblatt, Rohdatenblatt, direktem Download, Dateiname nach
+  `KUNDE_KABI_Zeitnachweis_YYYY_MM.xlsx`, ohne Formeln und ohne finanzielle
+  Daten.
+- Der PDF-Export ist umgesetzt: serverseitige PDF-Erzeugung mit Kopf,
+  KABI-Logo, Projekt, Zeitraum, Monatsstunden, Tabelle,
+  wiederholbarem Tabellenkopf, Seitenzaehler und Dateiname nach
+  `KUNDE_KABI_Zeitnachweis_YYYY_MM.pdf`.
+- Das KABI-Logo liegt als statisches Asset in `public/logo-kabi.png` und ist in
+  Login, App-Shell, PDF-Zeitnachweis und Excel-Zeitnachweis eingebunden.
+- Sprint 8 ist damit fachlich abgeschlossen.
+- Sprint 9 ist begonnen: Die lokale Testabdeckung ist ergaenzt. Vitest prueft
+  Kernlogik, Berichte, Exporte sowie Excel-/PDF-Downloadrouten; die
+  Browser-Smokes und spaetere E2E-Voraussetzungen sind in
+  `docs/testabdeckung.md` dokumentiert.
+- Aufgabe 9.2 ist lokal vorbereitet: Vercel-Konfiguration, `.env.example`,
+  `.gitignore`, Secret-Scan, Supabase-CLI-Verfuegbarkeit und Build sind
+  geprueft. Der Production-Smoke zeigt noch die alte `main`-Testseite und
+  `/login` liefert `404`; die externen Dashboard-Kontrollen und der
+  Production-Branch-Fix stehen in `docs/deployment-checkliste.md`.
+- Naechster Entwicklungsschritt: Aufgabe 9.3 V1-Abnahmecheck gegen Interview.

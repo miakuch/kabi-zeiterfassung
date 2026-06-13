@@ -92,5 +92,33 @@
 - Die Projekt-Detailseite ist umgesetzt: Projekte anlegen/bearbeiten,
   Standardaufgabe `Allgemein`, Aufgaben, Freigaben und abweichende
   Mitarbeitenden-Stundensaetze.
-- Naechster Entwicklungsschritt: Zeit-Domaenenlogik mit Dauerberechnung,
-  Rundung, Ueberschneidung und Timer-Regeln.
+- Die Zeit-Domaenenlogik ist umgesetzt: Start+Ende, Start+Dauer, Sekunden auf
+  volle Minuten aufrunden, Mindestdauer, Mitternachtsverbot, Warnung ab
+  10 Stunden, Ueberschneidungswarnung und Timer-Draft-State-Machine.
+- Der Zeiten-Screen ist begonnen: Das Aufgaben-Suchfeld laedt aktive buchbare
+  Aufgaben serverseitig ueber die normalen Nutzerrechte und zeigt Lang- sowie
+  Kompaktlabel nach Konzept.
+- Die obere Erfassungsleiste ist umgesetzt: Timer-/Manuell-Modus,
+  gespeicherte Nutzerpraeferenzen, manueller Untermodus `Ende`/`Dauer`,
+  Datum standardmaessig heute, Startzeit leer, Abrechenbar-Schalter und
+  serverseitiges Speichern manueller Eintraege.
+- Die Timer-Interaktion ist umgesetzt: Timer-Entwurf serverseitig speichern,
+  laufende `HH:MM:SS`-Anzeige, Aktualisieren waehrend der Laufzeit, Stoppen,
+  gestoppte Entwuerfe korrigieren, Speichern als Zeiteintrag und Verwerfen.
+- Die Eintragsliste ist umgesetzt: eigene Eintraege, Tagesgruppen mit
+  Tagesdauer, neueste Tage zuerst, innerhalb des Tages spaeteste Startzeit
+  zuerst, 50/100/250 Pagination und Aktionen fuer Bearbeiten, Loeschen,
+  Duplizieren, Fortsetzen und Abrechenbar-Umschaltung.
+- Sprint 7 ist begonnen: Die globalen Berichtsfilter sind umgesetzt mit
+  Quickfiltern, Kalenderdaten, Kunde, Projekt, Aufgabe, Abrechenbar und
+  Admin-Mitarbeitendenfilter.
+- Die Berichtskennzahlen und das umschaltbare Diagramm sind umgesetzt:
+  Gesamtstunden, abrechenbare/nicht abrechenbare Stunden, Admin-Betrag online
+  und Recharts-Gruppierungen nach Projekt, Kunde, Aufgabe, Zeitverlauf sowie
+  fuer Admins Mitarbeitende.
+- Die Berichtstabelle ist umgesetzt: eigene ruhige Auswertungstabelle mit allen
+  gefilterten Eintraegen ohne Pagination, Standard-Sortierung neueste Eintraege
+  zuerst, sortierbaren Spalten, Admin-Mitarbeitendenspalte und bewusst
+  aktivierbarer Admin-Betragsspalte.
+- Naechster Entwicklungsschritt: Sprint 8 Exporte mit gemeinsamer
+  Export-Datenstruktur.

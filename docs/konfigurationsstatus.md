@@ -156,5 +156,5 @@ Verwendung:
 - Logo-Datei in `public/` uebernehmen.
 - Vercel Production-Domain in der Vercel-UI final gegenpruefen.
 - Supabase Redirect URLs erneut pruefen, sobald die echte Production-Domain feststeht.
-- Zeit-Domaenenlogik fuer Dauer, Rundung, Ueberschneidung und Timer-Regeln
-  fachlich ausbauen.
+- Naechster fachlicher Ausbau: Exporte mit gemeinsamer Export-Datenstruktur,
+  Vorschau, Excel und PDF.

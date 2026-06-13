@@ -23,7 +23,14 @@ ohne unterwegs Funktionen einzubauen, die ausdruecklich nicht Teil von V1 sind.
   Stammdatenfunktion umgesetzt; die Mitarbeitendenverwaltung ist ebenfalls
   umgesetzt; die Projektuebersicht mit Budgetstatus und die Projekt-Detailseite
   sind umgesetzt.
-- Naechster fachlicher Schritt ist Sprint 5: Zeit-Domaenenlogik.
+- Sprint 5 ist umgesetzt: Zeitberechnung, Ueberschneidungspruefung und
+  Timer-Draft-State-Machine sind als getestete Domainlogik vorhanden.
+- Sprint 6 ist umgesetzt: Das Aufgaben-Suchfeld, die obere Erfassungsleiste,
+  die Timer-Interaktion und die Eintragsliste sind auf dem Zeiten-Screen
+  vorhanden.
+- Sprint 7 ist umgesetzt: Globale Berichtsfilter, Kennzahlen, umschaltbares
+  Diagramm und Berichtstabelle sind vorhanden.
+- Naechster fachlicher Schritt ist Sprint 8: Exporte.
 
 ## Grundsatz
 
@@ -285,6 +292,7 @@ Jeder Sprint muss am Ende lauffaehig, pruefbar und demo-faehig sein.
 - **Beschreibung:** Funktionen fuer Start+Ende, Start+Dauer, Rundung auf volle
   Minuten, Mindestdauer, keine Eintraege ueber Mitternacht.
 - **Abhaengigkeiten:** Sprint 1
+- **Status:** umgesetzt in `features/time/domain/time-calculation.ts`.
 - **Akzeptanzkriterien:**
   - Sekunden werden auf volle Minute aufgerundet.
   - Mindestdauer 1 Minute.
@@ -297,6 +305,7 @@ Jeder Sprint muss am Ende lauffaehig, pruefbar und demo-faehig sein.
 - **Beschreibung:** Serverseitige Ueberschneidungspruefung mit Bestaetigung nur im
   Request, nicht dauerhaft am Eintrag.
 - **Abhaengigkeiten:** Aufgabe 5.1
+- **Status:** umgesetzt in `features/time/domain/overlap.ts`.
 - **Akzeptanzkriterien:**
   - Ueberschneidung warnt.
   - Speichern mit bestaetigter Warnung moeglich.
@@ -309,6 +318,7 @@ Jeder Sprint muss am Ende lauffaehig, pruefbar und demo-faehig sein.
 - **Beschreibung:** Regeln fuer laufenden und gestoppten ungespeicherten
   Timer-Entwurf.
 - **Abhaengigkeiten:** Aufgabe 5.1
+- **Status:** umgesetzt in `features/timer/domain/timer-draft.ts`.
 - **Akzeptanzkriterien:**
   - Maximal ein Entwurf pro Nutzer.
   - Kein neuer Timer bei gestopptem ungespeichertem Entwurf.
@@ -330,6 +340,10 @@ Jeder Sprint muss am Ende lauffaehig, pruefbar und demo-faehig sein.
 - **Ort:** `features/tasks/task-picker/`
 - **Beschreibung:** Kombiniertes Suchfeld fuer buchbare Aufgaben.
 - **Abhaengigkeiten:** Sprint 4
+- **Status:** umgesetzt als erste sichtbare Zeiten-Oberflaeche mit
+  serverseitiger Aufgabenabfrage ueber die normale Nutzer-Session,
+  RLS-basierter Sichtbarkeit, Suchlogik ueber Kunde, Projektkennung,
+  Projektname und Aufgabe sowie Lang-/Kompaktanzeige.
 - **Akzeptanzkriterien:**
   - Suche ueber Kunde, Projektkennung, Projektname, Aufgabe.
   - Mitarbeitende sehen nur freigegebene aktive Aufgaben.
@@ -343,6 +357,10 @@ Jeder Sprint muss am Ende lauffaehig, pruefbar und demo-faehig sein.
 - **Beschreibung:** Modi Timer/manuell, Icons rechts, Euro-Icon, Pflichtfelder,
   Datum, Start+Ende/Start+Dauer.
 - **Abhaengigkeiten:** Aufgaben 5.1, 6.1
+- **Status:** umgesetzt fuer Moduswechsel, Nutzerpraeferenzen, manuelle
+  Eingabe mit Datum, Start+Ende oder Start+Dauer, serverseitiges Speichern,
+  Euro-Schalter und Pflichtfeldfehler erst nach Klick auf `Hinzufuegen`.
+  Die Timer-Oberflaeche ist sichtbar; Start/Stop-Interaktion folgt in 6.3.
 - **Akzeptanzkriterien:**
   - Letzter Modus und manueller Untermodus werden pro Nutzer gespeichert.
   - Nach Speichern wird Eingabe komplett geleert.
@@ -356,6 +374,10 @@ Jeder Sprint muss am Ende lauffaehig, pruefbar und demo-faehig sein.
 - **Beschreibung:** Start, Laufzeitanzeige `HH:MM:SS`, Stoppen, gestoppter Entwurf,
   Speichern/Verwerfen.
 - **Abhaengigkeiten:** Aufgabe 5.3
+- **Status:** umgesetzt mit serverseitig gespeichertem Timer-Entwurf,
+  laufender Anzeige, Aktualisieren waehrend der Laufzeit, Stoppen,
+  Korrekturfeldern fuer gestoppte Entwuerfe, Speichern als Zeiteintrag,
+  Verwerfen sowie Warnungen bei ueber Mitternacht und ab 10 Stunden.
 - **Akzeptanzkriterien:**
   - Timer serverseitig gespeichert, geraeteuebergreifend sichtbar.
   - Beschreibung, Aufgabe, Abrechenbar waehrend Lauf editierbar.
@@ -368,6 +390,10 @@ Jeder Sprint muss am Ende lauffaehig, pruefbar und demo-faehig sein.
 - **Beschreibung:** Tagesgruppen, 50/100/250 Pagination, neueste Tage zuerst,
   innerhalb Tag spaeteste Startzeit zuerst.
 - **Abhaengigkeiten:** Aufgabe 6.2
+- **Status:** umgesetzt mit eigenen Eintraegen, Tagesgruppen samt
+  Tages-Gesamtdauer, 50/100/250 Seitengroesse, Pagination, Zeilenklick zum
+  Bearbeiten und Aktionen fuer Euro umschalten, Bearbeiten, Loeschen,
+  Duplizieren und Fortsetzen.
 - **Akzeptanzkriterien:**
   - Tagesgruppe zeigt Tages-Gesamtdauer.
   - Keine Gesamtdauer der geladenen Seite.
@@ -390,6 +416,9 @@ Jeder Sprint muss am Ende lauffaehig, pruefbar und demo-faehig sein.
 - **Beschreibung:** Quickfilter, Kalender, Kunde, Projekt, Aufgabe, Abrechenbar,
   Admin zusaetzlich Mitarbeitende.
 - **Abhaengigkeiten:** Sprint 6
+- **Status:** umgesetzt mit Quickfiltern, Kalenderdaten, Kunde/Projekt/Aufgabe,
+  Abrechenbar und Admin-Mitarbeitendenfilter. Filteroptionen werden
+  serverseitig ueber die normalen Nutzerrechte geladen.
 - **Akzeptanzkriterien:**
   - Mitarbeitendenfilter nur Admin.
   - Mitarbeitende sehen nur Filteroptionen aus freigegebenen Aufgaben.
@@ -403,6 +432,10 @@ Jeder Sprint muss am Ende lauffaehig, pruefbar und demo-faehig sein.
 - **Beschreibung:** Gesamtstunden, abrechenbar/nicht abrechenbar, Admin online
   abrechenbarer Betrag; ein umschaltbares Diagramm.
 - **Abhaengigkeiten:** Aufgabe 7.1
+- **Status:** umgesetzt mit Gesamtstunden, abrechenbaren und nicht
+  abrechenbaren Stunden, Admin-Betrag nur serverseitig fuer Admins sowie
+  Recharts-Diagramm mit Gruppierungen Projekt, Kunde, Aufgabe, Zeitverlauf und
+  fuer Admins zusaetzlich Mitarbeitende.
 - **Akzeptanzkriterien:**
   - Keine prominente Anzahl Eintraege.
   - Diagrammgruppierung Projekt/Kunde/Aufgabe/Zeitverlauf, Admin zusaetzlich
@@ -415,6 +448,9 @@ Jeder Sprint muss am Ende lauffaehig, pruefbar und demo-faehig sein.
 - **Ort:** `features/reports/table/`
 - **Beschreibung:** Sortierbare Detailtabelle ohne Pagination.
 - **Abhaengigkeiten:** Aufgabe 7.1
+- **Status:** umgesetzt mit TanStack Table, allen gefilterten Eintraegen ohne
+  Pagination, Standard-Sortierung neueste Eintraege zuerst, sortierbaren
+  Spalten und bewusster Admin-Option fuer Betraege.
 - **Akzeptanzkriterien:**
   - Standard neueste Eintraege zuerst.
   - Spalten gemaess Konzept.

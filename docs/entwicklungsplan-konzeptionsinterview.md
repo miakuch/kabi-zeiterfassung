@@ -21,8 +21,9 @@ ohne unterwegs Funktionen einzubauen, die ausdruecklich nicht Teil von V1 sind.
   `Mitarbeitende` stehen.
 - Sprint 4 ist begonnen: die Kundenverwaltung ist als erste Admin-
   Stammdatenfunktion umgesetzt; die Mitarbeitendenverwaltung ist ebenfalls
-  umgesetzt.
-- Naechster fachlicher Schritt ist Aufgabe 4.3: Projektuebersicht.
+  umgesetzt; die Projektuebersicht mit Budgetstatus und die Projekt-Detailseite
+  sind umgesetzt.
+- Naechster fachlicher Schritt ist Sprint 5: Zeit-Domaenenlogik.
 
 ## Grundsatz
 
@@ -244,6 +245,8 @@ Jeder Sprint muss am Ende lauffaehig, pruefbar und demo-faehig sein.
 - **Beschreibung:** Liste mit Kunde, Kennung/Name, Status, Budgetstatus,
   Stundensatz, verbrauchten/offenen Budgets und Hinweisen.
 - **Abhaengigkeiten:** Aufgaben 4.1, 4.2
+- **Status:** umgesetzt als Admin-only Uebersicht mit Budgetberechnung,
+  Verbrauch, offenen Budgets, 80%-Hinweis und Ueberschritten-Warnung.
 - **Akzeptanzkriterien:**
   - Budgethinweise nur fuer Admins.
   - 80%-Hinweis und Ueberschritten-Warnung.
@@ -257,6 +260,9 @@ Jeder Sprint muss am Ende lauffaehig, pruefbar und demo-faehig sein.
   Budgets, Projektfarbe, Standardstundensatz, Mitarbeitenden-Stundensaetzen,
   Aufgaben und Freigaben.
 - **Abhaengigkeiten:** Aufgabe 4.3
+- **Status:** umgesetzt mit gemeinsamer Maske fuer `Neues Projekt` und
+  Bearbeiten, Projekt-Rahmendaten, Standardaufgabe `Allgemein`,
+  Aufgaben/Freigaben und abweichenden Mitarbeitenden-Stundensaetzen.
 - **Akzeptanzkriterien:**
   - `Neues Projekt` nutzt dieselbe Maske leer.
   - Standardaufgabe `Allgemein` optional per Checkbox, standardmaessig aktiviert.

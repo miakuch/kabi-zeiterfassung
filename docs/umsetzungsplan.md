@@ -85,4 +85,12 @@
   Name/E-Mail/Rolle/Status bearbeiten, aktivieren und deaktivieren.
 - Der letzte aktive Admin kann nicht deaktiviert oder zur Rolle Mitarbeitende
   geaendert werden.
-- Naechster Entwicklungsschritt: Projektuebersicht.
+- Die Projektuebersicht ist umgesetzt: Kunde, Kennung/Name, Status,
+  Aufgabenanzahl, verbrauchte Stunden/Betrag, offene Budgets und Budgetstatus.
+- Budgetdaten werden nur in der Admin-Route ueber eine Admin-Serverabfrage
+  geladen und nicht an Mitarbeitenden-Routen weitergegeben.
+- Die Projekt-Detailseite ist umgesetzt: Projekte anlegen/bearbeiten,
+  Standardaufgabe `Allgemein`, Aufgaben, Freigaben und abweichende
+  Mitarbeitenden-Stundensaetze.
+- Naechster Entwicklungsschritt: Zeit-Domaenenlogik mit Dauerberechnung,
+  Rundung, Ueberschneidung und Timer-Regeln.

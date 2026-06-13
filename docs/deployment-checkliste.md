@@ -70,6 +70,20 @@ Zwischenbefund beim ersten Magic-Link-Test:
   ausgefuehrt werden. Erwartetes Ziel nach Login: `/zeiten` auf derselben
   Preview-Domain.
 
+Zwischenbefund beim zweiten Magic-Link-Test:
+
+- Die Magic-Link-Mail leitete auf
+  `https://kabi-zeiterfassung-kabmia.vercel.app/?code=...`.
+- Diese stabile Vercel-Projektadresse zeigt ebenfalls noch die alte
+  Hello-World-Seite und ist nicht die konkrete Preview-Domain.
+- Code-Fix: Die Redirect-Origin bevorzugt nun den Browser-`Origin` und danach
+  den echten `Host`; Vercel-Forwarding-Header werden nur noch nachrangig
+  verwendet.
+- Zusaetzlich in Supabase KABI DEV pruefen: Die Additional Redirect URLs muessen
+  die konkrete Preview-Domain oder das Wildcard-Muster
+  `https://*-kabmia.vercel.app/**` enthalten. Sonst kann Supabase trotz
+  korrektem App-Code auf die Site URL zurueckfallen.
+
 ## Vercel Erwartung
 
 Preview:

@@ -17,10 +17,33 @@ function safeProtocol(value: string | null) {
   return protocol === "http" || protocol === "https" ? protocol : null;
 }
 
+function safeOrigin(value: string | null) {
+  const origin = firstHeaderValue(value);
+
+  if (!origin) {
+    return null;
+  }
+
+  try {
+    const parsed = new URL(origin);
+    return parsed.protocol === "http:" || parsed.protocol === "https:"
+      ? parsed.origin
+      : null;
+  } catch {
+    return null;
+  }
+}
+
 export function resolveAppOrigin(headers: HeaderReader, fallbackAppUrl?: string) {
+  const origin = safeOrigin(headers.get("origin"));
+
+  if (origin) {
+    return origin;
+  }
+
   const host =
-    firstHeaderValue(headers.get("x-forwarded-host")) ??
-    firstHeaderValue(headers.get("host"));
+    firstHeaderValue(headers.get("host")) ??
+    firstHeaderValue(headers.get("x-forwarded-host"));
 
   if (host) {
     const protocol =

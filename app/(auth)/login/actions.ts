@@ -22,7 +22,11 @@ export async function requestMagicLink(formData: FormData) {
 
   const env = getPublicEnv();
   const requestHeaders = await headers();
-  const appUrl = resolveAppOrigin(requestHeaders, env.NEXT_PUBLIC_APP_URL);
+  const appUrl = resolveAppOrigin(
+    requestHeaders,
+    env.NEXT_PUBLIC_APP_URL,
+    process.env.VERCEL_ENV === "production",
+  );
 
   if (!appUrl) {
     redirect("/login?error=magic-link");

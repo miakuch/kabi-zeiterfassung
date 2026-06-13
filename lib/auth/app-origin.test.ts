@@ -10,6 +10,20 @@ function headers(values: Record<string, string | undefined>) {
 }
 
 describe("resolveAppOrigin", () => {
+  it("prefers the configured production origin when requested", () => {
+    expect(
+      resolveAppOrigin(
+        headers({
+          origin: "https://kabi-zeiterfassung-8gxkojmyz-kabmia.vercel.app",
+          host: "kabi-zeiterfassung-8gxkojmyz-kabmia.vercel.app",
+          "x-forwarded-proto": "https",
+        }),
+        "https://kabi-zeiterfassung.vercel.app",
+        true,
+      ),
+    ).toBe("https://kabi-zeiterfassung.vercel.app");
+  });
+
   it("prefers the browser origin over forwarded Vercel aliases", () => {
     expect(
       resolveAppOrigin(

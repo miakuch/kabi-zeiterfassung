@@ -34,7 +34,17 @@ function safeOrigin(value: string | null) {
   }
 }
 
-export function resolveAppOrigin(headers: HeaderReader, fallbackAppUrl?: string) {
+export function resolveAppOrigin(
+  headers: HeaderReader,
+  fallbackAppUrl?: string,
+  preferFallback = false,
+) {
+  const fallbackOrigin = safeOrigin(fallbackAppUrl ?? null);
+
+  if (preferFallback && fallbackOrigin) {
+    return fallbackOrigin;
+  }
+
   const origin = safeOrigin(headers.get("origin"));
 
   if (origin) {
@@ -53,5 +63,5 @@ export function resolveAppOrigin(headers: HeaderReader, fallbackAppUrl?: string)
     return `${protocol}://${host}`;
   }
 
-  return firstHeaderValue(headers.get("origin")) ?? fallbackAppUrl ?? null;
+  return fallbackOrigin;
 }

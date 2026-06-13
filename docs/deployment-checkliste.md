@@ -103,6 +103,31 @@ Zwischenbefund beim dritten Magic-Link-Test:
   unangemeldete nach `/login` und einen versehentlich auf `/` landenden
   `?code=...` weiter nach `/auth/callback`.
 
+Zwischenbefund beim Production-Vergleich:
+
+- Preview `https://kabi-zeiterfassung-n4vejea18-kabmia.vercel.app/login`
+  sendet fuer `mia.kuch@kabi-consulting.de` erfolgreich und landet auf
+  `/login?sent=1`.
+- Production `https://kabi-zeiterfassung.vercel.app/login` scheitert fuer die
+  gleiche Adresse mit `/login?error=magic-link`.
+- Damit liegt der Fehler nicht im Formular, sondern in Production-Env oder KABI
+  PROD Auth/SMTP/Redirect-Konfiguration.
+- Code-Fix: In Vercel Production bevorzugt der Magic-Link-Redirect nun die feste
+  `NEXT_PUBLIC_APP_URL`, damit zufaellige Production-Deployment-URLs wie
+  `https://kabi-zeiterfassung-8gxkojmyz-kabmia.vercel.app` nicht in den
+  Supabase-Redirect geschrieben werden.
+- In Vercel Production zu pruefen:
+  - `NEXT_PUBLIC_APP_URL=https://kabi-zeiterfassung.vercel.app`
+  - `NEXT_PUBLIC_SUPABASE_URL` = KABI PROD
+  - `NEXT_PUBLIC_SUPABASE_ANON_KEY` = KABI PROD
+  - `SUPABASE_SERVICE_ROLE_KEY` = KABI PROD
+  - `INITIAL_ADMIN_EMAIL=mia.kuch@kabi-consulting.de`
+- In Supabase KABI PROD zu pruefen:
+  - SMTP/Auth-Mailversand ist eingerichtet.
+  - Site URL ist `https://kabi-zeiterfassung.vercel.app`.
+  - Additional Redirect URLs enthalten
+    `https://kabi-zeiterfassung.vercel.app/**`.
+
 ## Vercel Erwartung
 
 Preview:

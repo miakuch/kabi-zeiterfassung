@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { z } from "zod";
 import { getPublicEnv } from "@/lib/env";
+import { resolveAppOrigin } from "@/lib/auth/app-origin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const loginSchema = z.object({
@@ -21,7 +22,7 @@ export async function requestMagicLink(formData: FormData) {
 
   const env = getPublicEnv();
   const requestHeaders = await headers();
-  const appUrl = requestHeaders.get("origin") ?? env.NEXT_PUBLIC_APP_URL;
+  const appUrl = resolveAppOrigin(requestHeaders, env.NEXT_PUBLIC_APP_URL);
 
   if (!appUrl) {
     redirect("/login?error=magic-link");

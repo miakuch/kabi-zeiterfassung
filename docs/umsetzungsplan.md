@@ -149,4 +149,10 @@
   geprueft. Der Production-Smoke zeigt noch die alte `main`-Testseite und
   `/login` liefert `404`; die externen Dashboard-Kontrollen und der
   Production-Branch-Fix stehen in `docs/deployment-checkliste.md`.
-- Naechster Entwicklungsschritt: Aufgabe 9.3 V1-Abnahmecheck gegen Interview.
+- Aufgabe 9.3 ist begonnen: Der aktuelle `dev`-Preview-Smoke ohne angemeldete
+  Sitzung ist gruen. Login, Logo, mobile Login-Darstellung sowie die
+  Weiterleitung geschuetzter Produkt- und Export-Routen nach `/login` wurden
+  geprueft und in `docs/deployment-checkliste.md` dokumentiert.
+- Naechster Entwicklungsschritt: Magic-Link-Test mit freigeschalteter
+  Admin-Mail auf Preview und danach angemeldete V1-Abnahme gegen das
+  Konzeptionsinterview.

@@ -29,6 +29,47 @@ Stand: 2026-06-13
   `main` gemergt oder ein aktueller `dev`-Build nach Production promoted
   werden.
 
+## Preview-Smoke Am 2026-06-13
+
+Preview:
+
+`https://kabi-zeiterfassung-h7c228wej-kabmia.vercel.app/`
+
+Ergebnis ohne angemeldete Sitzung:
+
+- Preview Deployment Protection war zunaechst aktiv und wurde fuer die Pruefung
+  voruebergehend deaktiviert.
+- `/` laedt die neutrale technische Startseite.
+- `/login` laedt ohne Serverfehler, zeigt das KABI-Logo und das
+  Magic-Link-Formular.
+- Mobile Login-Pruefung bei 390 px Breite: Logo, E-Mail-Feld und Button sind
+  sichtbar; kein horizontales Layout-Overflow festgestellt.
+- Geschuetzte Produktseiten `/zeiten`, `/berichte`, `/kunden`, `/projekte` und
+  `/mitarbeitende` leiten ohne Sitzung korrekt auf `/login`.
+- Export-Routen `/berichte/export/excel` und `/berichte/export/pdf` leiten ohne
+  Sitzung ebenfalls korrekt auf `/login`.
+
+Noch offen fuer die finale V1-Abnahme:
+
+- Magic-Link-Test mit einer freigeschalteten Admin-Mail auf Preview.
+- Angemeldeter Smoke-Test fuer Zeiten, Berichte, Admin-Stammdaten und
+  Excel-/PDF-Downloads.
+- Danach erst Merge/Promotion auf Production.
+
+Zwischenbefund beim ersten Magic-Link-Test:
+
+- Nach erfolgreichem Login landete der Browser auf der alten Production-Seite
+  `Hello World KABI Zeiterfassung`.
+- Ursache: Der Magic-Link-Redirect muss in Preview zwingend aus der aktuellen
+  Request-Domain gebildet werden und darf nicht durch eine Production-App-URL
+  uebersteuert werden.
+- Code-Fix: Die App ermittelt die Redirect-Origin nun bevorzugt aus
+  `x-forwarded-host`/`host` und nutzt `NEXT_PUBLIC_APP_URL` nur noch als
+  Fallback.
+- Nach dem naechsten Preview-Deployment muss der Magic-Link-Test erneut
+  ausgefuehrt werden. Erwartetes Ziel nach Login: `/zeiten` auf derselben
+  Preview-Domain.
+
 ## Vercel Erwartung
 
 Preview:

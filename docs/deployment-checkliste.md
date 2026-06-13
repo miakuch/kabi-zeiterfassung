@@ -84,6 +84,25 @@ Zwischenbefund beim zweiten Magic-Link-Test:
   `https://*-kabmia.vercel.app/**` enthalten. Sonst kann Supabase trotz
   korrektem App-Code auf die Site URL zurueckfallen.
 
+Zwischenbefund beim dritten Magic-Link-Test:
+
+- Die neue Preview war
+  `https://kabi-zeiterfassung-n4vejea18-kabmia.vercel.app/`.
+- Die Magic-Link-Mail leitete weiterhin auf
+  `https://kabi-zeiterfassung-kabmia.vercel.app/?code=...`.
+- Damit ist der Fehler nicht mehr durch einen App-Redirect allein erklaerbar:
+  Die Supabase-Mail nutzt sehr wahrscheinlich `{{ .SiteURL }}` oder eine
+  manuell gebaute Site-URL statt `{{ .ConfirmationURL }}`.
+- Supabase KABI DEV -> Authentication -> Email Templates -> Magic Link/OTP:
+  Der Link im Template soll `{{ .ConfirmationURL }}` verwenden, damit der in
+  der App uebergebene Redirect zu `/auth/callback` respektiert wird.
+- Nicht als Problemloesung auf `main` pushen: Das wuerde hoechstens die alte
+  Hello-World-Seite auf der Vercel-Alias-Domain ersetzen, aber nicht die falsch
+  gebaute Magic-Link-URL beheben.
+- Code-Fallback: `/` leitet nun angemeldete Nutzende nach `/zeiten`,
+  unangemeldete nach `/login` und einen versehentlich auf `/` landenden
+  `?code=...` weiter nach `/auth/callback`.
+
 ## Vercel Erwartung
 
 Preview:

@@ -146,6 +146,12 @@ export function TimeEntryBar({
     initialTimerActionState,
   );
   const [, startTransition] = useTransition();
+  const manualState = actionState ?? initialManualEntryActionState;
+  const timerStartState = startTimerState ?? initialTimerActionState;
+  const timerSaveState = saveTimerState ?? initialTimerActionState;
+  const manualFieldErrors = manualState.fieldErrors ?? {};
+  const timerStartFieldErrors = timerStartState.fieldErrors ?? {};
+  const timerSaveFieldErrors = timerSaveState.fieldErrors ?? {};
 
   const selectedTask = useMemo(() => getTaskById(tasks, taskId), [tasks, taskId]);
   const hasTimerDraft = Boolean(timerDraft);
@@ -194,9 +200,9 @@ export function TimeEntryBar({
   }
 
   function errorClass(field: keyof typeof fieldLabels) {
-    return actionState.fieldErrors[field] ||
-      startTimerState.fieldErrors[field] ||
-      saveTimerState.fieldErrors[field]
+    return manualFieldErrors[field] ||
+      timerStartFieldErrors[field] ||
+      timerSaveFieldErrors[field]
       ? "border-destructive focus:border-destructive focus:ring-destructive/20"
       : "";
   }
@@ -525,10 +531,10 @@ export function TimeEntryBar({
         </p>
       ) : null}
 
-      {actionState.formError ? (
+      {manualState.formError ? (
         <div className="grid gap-1 rounded-md border border-destructive/30 bg-background px-3 py-2 text-sm text-destructive">
-          <p>{actionState.formError}</p>
-          {Object.entries(actionState.fieldErrors).map(([field, error]) => (
+          <p>{manualState.formError}</p>
+          {Object.entries(manualFieldErrors).map(([field, error]) => (
             <p key={field}>
               {fieldErrorMessage(field as keyof typeof fieldLabels, error)}
             </p>
@@ -536,12 +542,12 @@ export function TimeEntryBar({
         </div>
       ) : null}
 
-      {startTimerState.formError || saveTimerState.formError || pageErrorMessage ? (
+      {timerStartState.formError || timerSaveState.formError || pageErrorMessage ? (
         <div className="grid gap-1 rounded-md border border-destructive/30 bg-background px-3 py-2 text-sm text-destructive">
-          {startTimerState.formError ? <p>{startTimerState.formError}</p> : null}
-          {saveTimerState.formError ? <p>{saveTimerState.formError}</p> : null}
+          {timerStartState.formError ? <p>{timerStartState.formError}</p> : null}
+          {timerSaveState.formError ? <p>{timerSaveState.formError}</p> : null}
           {pageErrorMessage ? <p>{pageErrorMessage}</p> : null}
-          {Object.entries(saveTimerState.fieldErrors).map(([field, error]) => (
+          {Object.entries(timerSaveFieldErrors).map(([field, error]) => (
             <p key={field}>
               {fieldErrorMessage(field as keyof typeof fieldLabels, error)}
             </p>

@@ -232,13 +232,15 @@ export function TimeEntriesList({ result, tasks }: TimeEntriesListProps) {
     upsertTimeEntryFromListAction,
     initialTimeEntryEditActionState,
   );
+  const safeEditState = editState ?? initialTimeEntryEditActionState;
+  const editFieldErrors = safeEditState.fieldErrors ?? {};
   const tasksById = useMemo(
     () => new Map(tasks.map((task) => [task.id, task])),
     [tasks],
   );
 
   function errorClass(field: keyof typeof fieldLabels) {
-    return editState.fieldErrors[field]
+    return editFieldErrors[field]
       ? "border-destructive focus:border-destructive focus:ring-destructive/20"
       : "";
   }
@@ -428,10 +430,10 @@ export function TimeEntriesList({ result, tasks }: TimeEntriesListProps) {
                 </label>
               </div>
 
-              {editState.formError ? (
+              {safeEditState.formError ? (
                 <div className="grid gap-1 rounded-md border border-destructive/30 bg-background px-3 py-2 text-sm text-destructive">
-                  <p>{editState.formError}</p>
-                  {Object.entries(editState.fieldErrors).map(([field, error]) => (
+                  <p>{safeEditState.formError}</p>
+                  {Object.entries(editFieldErrors).map(([field, error]) => (
                     <p key={field}>
                       {fieldErrorMessage(field as keyof typeof fieldLabels, error)}
                     </p>

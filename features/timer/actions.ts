@@ -11,21 +11,8 @@ import {
 import {
   formValue,
   validateManualTimeEntry,
-  type ManualTimeEntryFieldError,
-  type ManualTimeEntryValidationError,
 } from "@/features/time-entry-bar/schema";
-
-export type TimerActionState = {
-  formError: string | null;
-  fieldErrors: Partial<
-    Record<ManualTimeEntryFieldError, ManualTimeEntryValidationError>
-  >;
-};
-
-export const initialTimerActionState: TimerActionState = {
-  formError: null,
-  fieldErrors: {},
-};
+import type { TimerActionState } from "./action-state";
 
 function trimmedOrNull(value: string) {
   const trimmed = value.trim();

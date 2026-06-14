@@ -16,11 +16,11 @@ import type { TaskPickerItem } from "@/features/tasks/task-picker/queries";
 import {
   continueTimeEntryAction,
   deleteTimeEntryAction,
-  initialTimeEntryEditActionState,
   toggleTimeEntryBillableAction,
   updateTimeEntriesPageSizeAction,
   upsertTimeEntryFromListAction,
 } from "./actions";
+import { initialTimeEntryEditActionState } from "./action-state";
 import {
   formatDuration,
   formatGermanDate,

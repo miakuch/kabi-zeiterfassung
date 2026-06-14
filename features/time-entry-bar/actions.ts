@@ -10,21 +10,8 @@ import {
   validateManualTimeEntry,
   type EntryMode,
   type ManualEntryMode,
-  type ManualTimeEntryFieldError,
-  type ManualTimeEntryValidationError,
 } from "./schema";
-
-export type ManualEntryActionState = {
-  formError: string | null;
-  fieldErrors: Partial<
-    Record<ManualTimeEntryFieldError, ManualTimeEntryValidationError>
-  >;
-};
-
-export const initialManualEntryActionState: ManualEntryActionState = {
-  formError: null,
-  fieldErrors: {},
-};
+import type { ManualEntryActionState } from "./action-state";
 
 export async function updateTimeEntryPreferences(input: {
   entryMode: EntryMode;

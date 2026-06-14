@@ -7,22 +7,9 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   formValue,
   validateManualTimeEntry,
-  type ManualTimeEntryFieldError,
-  type ManualTimeEntryValidationError,
 } from "@/features/time-entry-bar/schema";
+import type { TimeEntryEditActionState } from "./action-state";
 import { parseTimeEntriesPageSize, type TimeEntriesPageSize } from "./queries";
-
-export type TimeEntryEditActionState = {
-  formError: string | null;
-  fieldErrors: Partial<
-    Record<ManualTimeEntryFieldError, ManualTimeEntryValidationError>
-  >;
-};
-
-export const initialTimeEntryEditActionState: TimeEntryEditActionState = {
-  formError: null,
-  fieldErrors: {},
-};
 
 function timesPath(params: Record<string, string>) {
   const searchParams = new URLSearchParams(params);

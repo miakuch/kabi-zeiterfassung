@@ -5,6 +5,7 @@
 node_modules/
 .next/
 .vercel/
+supabase/.temp/
 .archive/
 out/
 dist/

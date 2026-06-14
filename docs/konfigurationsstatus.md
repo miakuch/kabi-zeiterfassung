@@ -1,6 +1,6 @@
 # Konfigurationsstatus
 
-Stand: 2026-06-13
+Stand: 2026-06-14
 
 Diese Datei fasst die technischen Entscheidungen und erledigten
 Konfigurationspunkte aus dem Nachlauf des Interviews zusammen. Sie ist kein
@@ -33,6 +33,17 @@ Konsequenz fuer Migrationen:
 - Tabellen muessen explizite Grants erhalten.
 - RLS-Policies muessen bewusst definiert werden.
 - Neue Tabellen sollen nicht automatisch offen ueber die API erreichbar sein.
+
+KABI DEV:
+
+- Die lokalen Migrationen wurden am 2026-06-14 per Supabase CLI auf KABI DEV
+  angewendet.
+- Ausgefuehrte Migrationen:
+  - `20260611231000_initial_schema.sql`
+  - `20260611232000_rls_policies.sql`
+- `public.employees` und die weiteren V1-Kerntabellen existieren in KABI DEV.
+- Direkt nach der Migration war `public.employees` leer; der erste erfolgreiche
+  Login mit `INITIAL_ADMIN_EMAIL` soll den Initial-Admin automatisch anlegen.
 
 ## Lokale Umgebung
 

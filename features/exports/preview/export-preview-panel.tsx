@@ -72,7 +72,7 @@ export function ExportPreviewPanel({
         <div>
           <h2 className="text-lg font-semibold">Zeitnachweis-Export</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Projekt-Monatsnachweis ohne Stundensaetze und Betraege.
+            Projekt-Monatsnachweis ohne Stundensätze und Beträge.
           </p>
         </div>
       </div>
@@ -94,7 +94,7 @@ export function ExportPreviewPanel({
             defaultValue={selection.projectId}
             name="exportProject"
           >
-            <option value="">Projekt waehlen</option>
+            <option value="">Projekt wählen</option>
             {options.projects.map((project) => (
               <option key={project.id} value={project.id}>
                 {projectLabel(project)}
@@ -122,13 +122,13 @@ export function ExportPreviewPanel({
       {selection.monthIsInvalid ? (
         <div className="flex items-start gap-3 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
           <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-          <p>Der ausgewaehlte Monat ist ungueltig.</p>
+          <p>Der ausgewählte Monat ist ungültig.</p>
         </div>
       ) : null}
 
       {!canPreview ? (
         <div className="rounded-md border bg-secondary/60 p-4 text-sm text-muted-foreground">
-          Bitte Projekt und Monat fuer den Zeitnachweis waehlen.
+          Bitte Projekt und Monat für den Zeitnachweis wählen.
         </div>
       ) : null}
 
@@ -198,7 +198,7 @@ export function ExportPreviewPanel({
                 {formatExportDecimalHours(preview.totalDecimalHours)} Stunden
               </p>
               <p className="mt-1 text-sm text-muted-foreground">
-                {preview.entries.length} Eintraege
+                {preview.entries.length} Einträge
               </p>
             </div>
             <div className="rounded-md border bg-background p-3">
@@ -215,7 +215,7 @@ export function ExportPreviewPanel({
                 className="mt-0.5 size-4 shrink-0"
                 aria-hidden="true"
               />
-              <p>Keine abrechenbaren Eintraege fuer diesen Projektmonat.</p>
+              <p>Keine abrechenbaren Einträge für diesen Projektmonat.</p>
             </div>
           ) : null}
 
@@ -273,7 +273,7 @@ export function ExportPreviewPanel({
                       className="px-3 py-8 text-center text-muted-foreground"
                       colSpan={6}
                     >
-                      Keine Eintraege fuer die Vorschau.
+                      Keine Einträge für die Vorschau.
                     </td>
                   </tr>
                 )}
@@ -283,7 +283,7 @@ export function ExportPreviewPanel({
 
           {preview.entries.length > visibleEntries.length ? (
             <p className="text-sm text-muted-foreground">
-              {preview.entries.length - visibleEntries.length} weitere Eintraege im
+              {preview.entries.length - visibleEntries.length} weitere Einträge im
               Zeitnachweis.
             </p>
           ) : null}

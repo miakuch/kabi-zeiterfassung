@@ -31,7 +31,7 @@ export async function ensureEmployeeSession({
     .select("id", { count: "exact", head: true });
 
   if (countError) {
-    throw new Error("Mitarbeitendenstatus konnte nicht geprueft werden.");
+    throw new Error("Mitarbeitendenstatus konnte nicht geprüft werden.");
   }
 
   const { data: employee, error: employeeError } = await admin
@@ -50,7 +50,7 @@ export async function ensureEmployeeSession({
       normalizedEmail === normalizeEmail(env.INITIAL_ADMIN_EMAIL);
 
     if (!isInitialAdmin) {
-      throw new Error("Diese E-Mail-Adresse ist nicht fuer die App freigeschaltet.");
+      throw new Error("Diese E-Mail-Adresse ist nicht für die App freigeschaltet.");
     }
 
     const name =
@@ -84,7 +84,7 @@ export async function ensureEmployeeSession({
   }
 
   if (employee.auth_user_id && employee.auth_user_id !== authUserId) {
-    throw new Error("Diese E-Mail-Adresse ist bereits mit einem anderen Login verknuepft.");
+    throw new Error("Diese E-Mail-Adresse ist bereits mit einem anderen Login verknüpft.");
   }
 
   if (!employee.auth_user_id) {
@@ -94,7 +94,7 @@ export async function ensureEmployeeSession({
       .eq("id", employee.id);
 
     if (linkError) {
-      throw new Error("Login konnte nicht mit dem Mitarbeitendenprofil verknuepft werden.");
+      throw new Error("Login konnte nicht mit dem Mitarbeitendenprofil verknüpft werden.");
     }
   }
 

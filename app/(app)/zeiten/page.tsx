@@ -17,6 +17,7 @@ type TimesPageProps = {
   searchParams: Promise<{
     error?: string;
     page?: string;
+    selectedTask?: string;
     task?: string;
     success?: string;
   }>;
@@ -41,7 +42,7 @@ export default async function TimesPage({ searchParams }: TimesPageProps) {
   const successMessages: Record<string, string> = {
     "zeit-aktualisiert": "Zeit wurde aktualisiert.",
     "zeit-dupliziert": "Eintrag wurde dupliziert.",
-    "zeit-geloescht": "Eintrag wurde geloescht.",
+    "zeit-geloescht": "Eintrag wurde gelöscht.",
     "zeit-gespeichert": "Zeit wurde gespeichert.",
     "timer-aktualisiert": "Timer wurde aktualisiert.",
     "timer-gestartet": "Timer wurde gestartet.",
@@ -52,13 +53,13 @@ export default async function TimesPage({ searchParams }: TimesPageProps) {
   const errorMessages: Record<string, string> = {
     "timer-speichern": "Timer konnte nicht aktualisiert werden.",
     "timer-stoppen": "Timer konnte nicht gestoppt werden.",
-    "timer-ungueltig": "Timer-Entwurf ist ungueltig.",
+    "timer-ungueltig": "Timer-Entwurf ist ungültig.",
     "timer-verwerfen": "Timer konnte nicht verworfen werden.",
     "timer-besteht": "Es gibt bereits einen Timer-Entwurf.",
     "timer-starten": "Timer konnte nicht gestartet werden.",
-    "zeit-loeschen": "Eintrag konnte nicht geloescht werden.",
+    "zeit-loeschen": "Eintrag konnte nicht gelöscht werden.",
     "zeit-speichern": "Eintrag konnte nicht gespeichert werden.",
-    "zeit-ungueltig": "Eintrag ist ungueltig.",
+    "zeit-ungueltig": "Eintrag ist ungültig.",
   };
   const successMessage = params.success
     ? successMessages[params.success]
@@ -75,6 +76,7 @@ export default async function TimesPage({ searchParams }: TimesPageProps) {
       </div>
 
       <TimeEntryBar
+        initialTaskId={params.selectedTask}
         initialEntryMode={preferences.lastEntryMode}
         initialManualMode={preferences.lastManualMode}
         pageErrorMessage={errorMessage}
@@ -86,7 +88,11 @@ export default async function TimesPage({ searchParams }: TimesPageProps) {
 
       <TimeEntriesList result={timeEntries} tasks={taskItems} />
 
-      <TaskPicker query={taskQuery} items={pickerTaskItems} />
+      <TaskPicker
+        query={taskQuery}
+        items={pickerTaskItems}
+        selectedTaskId={params.selectedTask}
+      />
     </section>
   );
 }

@@ -57,7 +57,7 @@ export async function getActiveProjectCount(customerId: string) {
     .eq("status", "active");
 
   if (error) {
-    throw new Error("Aktive Projekte konnten nicht geprueft werden.");
+    throw new Error("Aktive Projekte konnten nicht geprüft werden.");
   }
 
   return count ?? 0;

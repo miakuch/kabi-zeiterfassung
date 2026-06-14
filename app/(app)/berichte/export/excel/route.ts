@@ -22,7 +22,7 @@ export async function GET(request: Request) {
   const month = parseExportMonth(monthParam);
 
   if (!projectId || !month.ok) {
-    return errorResponse("Projekt und Monat sind fuer den Export erforderlich.", 400);
+    return errorResponse("Projekt und Monat sind für den Export erforderlich.", 400);
   }
 
   const exportData = await getProjectMonthExportData({
@@ -36,7 +36,7 @@ export async function GET(request: Request) {
 
   if (exportData.entries.length === 0) {
     return errorResponse(
-      "Keine abrechenbaren Eintraege fuer diesen Projektmonat.",
+      "Keine abrechenbaren Einträge für diesen Projektmonat.",
       400,
     );
   }
@@ -57,4 +57,3 @@ export async function GET(request: Request) {
     },
   });
 }
-

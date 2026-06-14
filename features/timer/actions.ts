@@ -84,7 +84,7 @@ export async function startTimerDraftAction(
 
   if (!taskId) {
     return {
-      formError: "Bitte waehle eine Aufgabe.",
+      formError: "Bitte wähle eine Aufgabe.",
       fieldErrors: { taskId: "required" },
     };
   }
@@ -98,7 +98,7 @@ export async function startTimerDraftAction(
 
   if (existingError) {
     return {
-      formError: "Timer konnte nicht geprueft werden.",
+      formError: "Timer konnte nicht geprüft werden.",
       fieldErrors: {},
     };
   }
@@ -236,7 +236,7 @@ export async function saveStoppedTimerDraftAction(
 
   if (!parsed.ok) {
     return {
-      formError: "Bitte pruefe die markierten Felder.",
+      formError: "Bitte prüfe die markierten Felder.",
       fieldErrors: parsed.fieldErrors,
     };
   }
@@ -252,7 +252,7 @@ export async function saveStoppedTimerDraftAction(
     return {
       formError:
         readiness.reason === "missing-description"
-          ? "Bitte ergaenze eine Beschreibung."
+          ? "Bitte ergänze eine Beschreibung."
           : "Timer muss zuerst gestoppt werden.",
       fieldErrors:
         readiness.reason === "missing-description"

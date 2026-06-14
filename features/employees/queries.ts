@@ -53,7 +53,7 @@ export async function getActiveAdminCount() {
     .eq("status", "active");
 
   if (error) {
-    throw new Error("Aktive Admins konnten nicht geprueft werden.");
+    throw new Error("Aktive Admins konnten nicht geprüft werden.");
   }
 
   return count ?? 0;

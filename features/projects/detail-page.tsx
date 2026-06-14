@@ -27,7 +27,7 @@ const errorMessages: Record<string, string> = {
   "aufgabe-vergeben": "Diese Aufgabe existiert in diesem Projekt bereits.",
   "speichern": "Das Projekt konnte nicht gespeichert werden.",
   "stundensatz": "Der Stundensatz konnte nicht gespeichert werden.",
-  "ungueltige-eingabe": "Bitte pruefe die Eingaben.",
+  "ungueltige-eingabe": "Bitte prüfe die Eingaben.",
 };
 
 const successMessages: Record<string, string> = {
@@ -77,7 +77,7 @@ export function ProjectDetailPage({
             href="/projekte"
           >
             <ArrowLeft className="size-4" aria-hidden="true" />
-            Zurueck
+            Zurück
           </Link>
           <p className="mt-5 text-sm font-medium text-muted-foreground">
             Stammdaten
@@ -113,7 +113,7 @@ export function ProjectDetailPage({
               required
             >
               <option value="" disabled>
-                Kunde waehlen
+                Kunde wählen
               </option>
               {options.customers.map((customer) => (
                 <option key={customer.id} value={customer.id}>
@@ -231,7 +231,7 @@ export function ProjectDetailPage({
             />
             <span>
               Standardaufgabe Allgemein anlegen. Die Aufgabe wird nicht
-              automatisch fuer alle freigegeben.
+              automatisch für alle freigegeben.
             </span>
           </label>
         ) : null}
@@ -253,7 +253,7 @@ export function ProjectDetailPage({
             <div>
               <h2 className="text-lg font-semibold">Aufgaben und Freigaben</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Aufgaben sind die buchbare Einheit fuer die Zeiterfassung.
+                Aufgaben sind die buchbare Einheit für die Zeiterfassung.
               </p>
             </div>
 
@@ -311,7 +311,7 @@ export function ProjectDetailPage({
                   {hasNoBookableEmployees(task) ? (
                     <p className="flex gap-2 rounded-md bg-[#fff8e6] px-3 py-2 text-sm text-[#6f4f00]">
                       <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-                      Diese aktive Aufgabe ist fuer niemanden buchbar.
+                      Diese aktive Aufgabe ist für niemanden buchbar.
                     </p>
                   ) : null}
 
@@ -351,7 +351,7 @@ export function ProjectDetailPage({
                         defaultValue={task.assignmentMode}
                         name="assignmentMode"
                       >
-                        <option value="selected">Ausgewaehlt</option>
+                        <option value="selected">Ausgewählt</option>
                         <option value="all">Alle</option>
                       </select>
                     </label>
@@ -360,7 +360,7 @@ export function ProjectDetailPage({
                   <div className="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-end">
                     <fieldset className="grid gap-2">
                       <legend className="text-sm font-medium">
-                        Ausgewaehlte Mitarbeitende
+                        Ausgewählte Mitarbeitende
                       </legend>
                       <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
                         {options.employees.map((employee) => (
@@ -412,7 +412,7 @@ export function ProjectDetailPage({
           <section className="grid gap-4 rounded-md border bg-card p-5">
             <div>
               <h2 className="text-lg font-semibold">
-                Abweichende Mitarbeitenden-Stundensaetze
+                Abweichende Mitarbeitenden-Stundensätze
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 Leeres Feld bedeutet: Projekt-Standardstundensatz verwenden.

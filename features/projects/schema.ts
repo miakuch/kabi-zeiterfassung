@@ -41,7 +41,7 @@ export const projectFormSchema = z
     if (value.budgetAlertBasis === "hours" && value.hourlyBudget === null) {
       ctx.addIssue({
         code: "custom",
-        message: "Stundenbudget fehlt fuer Budgetbasis Stunden.",
+        message: "Stundenbudget fehlt für Budgetbasis Stunden.",
         path: ["hourlyBudget"],
       });
     }
@@ -49,7 +49,7 @@ export const projectFormSchema = z
     if (value.budgetAlertBasis === "amount" && value.amountBudget === null) {
       ctx.addIssue({
         code: "custom",
-        message: "Betragsbudget fehlt fuer Budgetbasis Betrag.",
+        message: "Betragsbudget fehlt für Budgetbasis Betrag.",
         path: ["amountBudget"],
       });
     }

@@ -73,6 +73,26 @@ function chartGroupLinks(
   }));
 }
 
+function ReportsLoadError() {
+  return (
+    <section className="grid gap-6">
+      <div>
+        <p className="text-sm font-medium text-muted-foreground">
+          Auswertung
+        </p>
+        <h1 className="mt-2 text-3xl font-semibold tracking-normal">
+          Berichte
+        </h1>
+      </div>
+
+      <div className="rounded-md border border-destructive/30 bg-card p-4 text-sm text-destructive sm:p-5">
+        Berichte konnten nicht geladen werden. Bitte lade die Seite neu. Falls
+        der Fehler erneut auftritt, stehen Details in den Vercel-Logs.
+      </div>
+    </section>
+  );
+}
+
 export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   const employee = await requireEmployeeSession();
   const params = await searchParams;
@@ -93,15 +113,36 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
           month: exportSelection.month,
         })
       : Promise.resolve(null);
-  const [options, overview, exportPreview] = await Promise.all([
-    getReportFilterOptions(employee),
-    getReportOverview({
-      employee,
-      filters,
-      grouping,
-    }),
-    exportPreviewPromise,
-  ]);
+  const [optionsResult, overviewResult, exportPreviewResult] =
+    await Promise.allSettled([
+      getReportFilterOptions(employee),
+      getReportOverview({
+        employee,
+        filters,
+        grouping,
+      }),
+      exportPreviewPromise,
+    ]);
+
+  if (optionsResult.status === "rejected" || overviewResult.status === "rejected") {
+    console.error("Reports page failed", {
+      options:
+        optionsResult.status === "rejected" ? optionsResult.reason : undefined,
+      overview:
+        overviewResult.status === "rejected" ? overviewResult.reason : undefined,
+    });
+
+    return <ReportsLoadError />;
+  }
+
+  if (exportPreviewResult.status === "rejected") {
+    console.error("Report export preview failed", exportPreviewResult.reason);
+  }
+
+  const options = optionsResult.value;
+  const overview = overviewResult.value;
+  const exportPreview =
+    exportPreviewResult.status === "fulfilled" ? exportPreviewResult.value : null;
 
   return (
     <section className="grid gap-6">

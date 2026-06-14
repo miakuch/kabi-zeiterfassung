@@ -26,8 +26,8 @@ type CustomersPageProps = {
 
 const errorMessages: Record<string, string> = {
   "name-vergeben": "Dieser Kundenname ist bereits vergeben.",
-  "speichern": "Die Aenderung konnte nicht gespeichert werden.",
-  "ungueltige-eingabe": "Bitte pruefe die Eingaben.",
+  "speichern": "Die Änderung konnte nicht gespeichert werden.",
+  "ungueltige-eingabe": "Bitte prüfe die Eingaben.",
   "ungueltiger-name": "Kundenname ist Pflicht.",
 };
 
@@ -220,7 +220,7 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
                           aria-hidden="true"
                         />
                         Dieser Kunde hat aktive Projekte. Projekte und Aufgaben
-                        bleiben unveraendert.
+                        bleiben unverändert.
                       </p>
                       <div className="flex flex-wrap gap-2">
                         <form action={deactivateCustomer}>

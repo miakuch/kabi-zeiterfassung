@@ -251,7 +251,7 @@ export function ProjectMonthPdfDocument({
               </View>
             ))
           ) : (
-            <Text style={styles.emptyState}>Keine abrechenbaren Eintraege.</Text>
+            <Text style={styles.emptyState}>Keine abrechenbaren Einträge.</Text>
           )}
         </View>
 

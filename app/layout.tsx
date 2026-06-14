@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "KABI Zeiterfassung",
-  description: "Interne Zeiterfassung fuer KABI Consulting",
+  description: "Interne Zeiterfassung für KABI Consulting",
 };
 
 export default function RootLayout({

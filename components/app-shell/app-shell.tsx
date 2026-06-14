@@ -101,9 +101,9 @@ export function AppShell({ employee, children }: AppShellProps) {
             <details className="group relative lg:hidden">
               <summary className="flex size-10 cursor-pointer list-none items-center justify-center rounded-md border bg-background">
                 <Menu className="size-5" aria-hidden="true" />
-                <span className="sr-only">Navigation oeffnen</span>
+                <span className="sr-only">Navigation öffnen</span>
               </summary>
-              <div className="absolute left-0 top-12 w-72 rounded-md border bg-card p-3 shadow-lg">
+              <div className="absolute left-0 top-12 w-[calc(100vw-2rem)] max-w-72 rounded-md border bg-card p-3 shadow-lg">
                 <Navigation employee={employee} />
               </div>
             </details>

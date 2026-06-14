@@ -70,7 +70,7 @@ function fieldErrorMessage(field: keyof typeof fieldLabels, error?: string) {
   }
 
   if (error === "crosses-midnight") {
-    return `${fieldLabels[field]} verlaeuft ueber Mitternacht.`;
+    return `${fieldLabels[field]} verläuft über Mitternacht.`;
   }
 
   if (error === "end-not-after-start") {
@@ -78,11 +78,11 @@ function fieldErrorMessage(field: keyof typeof fieldLabels, error?: string) {
   }
 
   if (error === "invalid-time") {
-    return `${fieldLabels[field]} ist ungueltig.`;
+    return `${fieldLabels[field]} ist ungültig.`;
   }
 
   if (error === "invalid-date") {
-    return "Datum ist ungueltig.";
+    return "Datum ist ungültig.";
   }
 
   return `${fieldLabels[field]} ist erforderlich.`;
@@ -137,7 +137,7 @@ function DayGroup({
                 </span>
               </button>
 
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2 sm:justify-end">
                 <span className="min-w-[140px] rounded-md bg-card px-2 py-1 text-center font-mono text-sm">
                   {trimSeconds(entry.startTime)}-{trimSeconds(entry.endTime)}
                 </span>
@@ -208,12 +208,12 @@ function DayGroup({
                 <Button
                   className="size-9 px-0"
                   onClick={() => onDelete(entry)}
-                  title="Loeschen"
+                  title="Löschen"
                   type="button"
                   variant="outline"
                 >
                   <Trash2 className="size-4" aria-hidden="true" />
-                  <span className="sr-only">Loeschen</span>
+                  <span className="sr-only">Löschen</span>
                 </Button>
               </div>
             </div>
@@ -249,9 +249,9 @@ export function TimeEntriesList({ result, tasks }: TimeEntriesListProps) {
     <section className="grid gap-4 rounded-md border bg-card p-4 sm:p-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 className="text-lg font-semibold">Eintraege</h2>
+          <h2 className="text-lg font-semibold">Einträge</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            {result.totalCount} Eintraege, neueste Tage zuerst.
+            {result.totalCount} Einträge, neueste Tage zuerst.
           </p>
         </div>
 
@@ -289,7 +289,7 @@ export function TimeEntriesList({ result, tasks }: TimeEntriesListProps) {
         </div>
       ) : (
         <p className="rounded-md border border-dashed bg-background px-3 py-8 text-center text-sm text-muted-foreground">
-          Noch keine Zeiteintraege vorhanden.
+          Noch keine Zeiteinträge vorhanden.
         </p>
       )}
 
@@ -303,7 +303,7 @@ export function TimeEntriesList({ result, tasks }: TimeEntriesListProps) {
               aria-disabled={!result.hasPreviousPage}
               href={pageHref(Math.max(1, result.page - 1))}
             >
-              Zurueck
+              Zurück
             </a>
           </Button>
           <Button asChild disabled={!result.hasNextPage} variant="outline">
@@ -319,7 +319,7 @@ export function TimeEntriesList({ result, tasks }: TimeEntriesListProps) {
 
       {editor ? (
         <div className="fixed inset-0 z-50 grid place-items-center bg-foreground/20 p-4">
-          <div className="grid w-full max-w-3xl gap-4 rounded-md border bg-card p-5 shadow-lg">
+          <div className="grid max-h-[calc(100vh-2rem)] w-full max-w-3xl gap-4 overflow-y-auto rounded-md border bg-card p-5 shadow-lg">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h3 className="text-lg font-semibold">
@@ -336,7 +336,7 @@ export function TimeEntriesList({ result, tasks }: TimeEntriesListProps) {
                 variant="ghost"
               >
                 <X className="size-4" aria-hidden="true" />
-                <span className="sr-only">Schliessen</span>
+                <span className="sr-only">Schließen</span>
               </Button>
             </div>
 
@@ -441,7 +441,7 @@ export function TimeEntriesList({ result, tasks }: TimeEntriesListProps) {
                 </div>
               ) : null}
 
-              <div className="flex justify-end gap-2">
+              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                 <Button
                   onClick={() => setEditor(null)}
                   type="button"
@@ -463,13 +463,13 @@ export function TimeEntriesList({ result, tasks }: TimeEntriesListProps) {
         <div className="fixed inset-0 z-50 grid place-items-center bg-foreground/20 p-4">
           <div className="grid w-full max-w-md gap-4 rounded-md border bg-card p-5 shadow-lg">
             <div>
-              <h3 className="text-lg font-semibold">Eintrag wirklich loeschen?</h3>
+              <h3 className="text-lg font-semibold">Eintrag wirklich löschen?</h3>
               <p className="mt-1 text-sm text-muted-foreground">
                 {formatGermanDate(deleteCandidate.workDate)} ·{" "}
                 {deleteCandidate.description}
               </p>
             </div>
-            <div className="flex justify-end gap-2">
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <Button
                 onClick={() => setDeleteCandidate(null)}
                 type="button"
@@ -481,7 +481,7 @@ export function TimeEntriesList({ result, tasks }: TimeEntriesListProps) {
                 <input name="entryId" type="hidden" value={deleteCandidate.id} />
                 <Button type="submit">
                   <Trash2 className="size-4" aria-hidden="true" />
-                  Loeschen
+                  Löschen
                 </Button>
               </form>
             </div>

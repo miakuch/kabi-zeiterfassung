@@ -70,7 +70,7 @@ describe("pdf export route", () => {
 
     expect(response.status).toBe(400);
     expect(await response.json()).toEqual({
-      error: "Projekt und Monat sind fuer den Export erforderlich.",
+      error: "Projekt und Monat sind für den Export erforderlich.",
     });
     expect(getProjectMonthExportData).not.toHaveBeenCalled();
   });
@@ -89,7 +89,7 @@ describe("pdf export route", () => {
 
     expect(response.status).toBe(400);
     expect(await response.json()).toEqual({
-      error: "Keine abrechenbaren Eintraege fuer diesen Projektmonat.",
+      error: "Keine abrechenbaren Einträge für diesen Projektmonat.",
     });
   });
 
@@ -111,4 +111,3 @@ describe("pdf export route", () => {
     expect(buffer.subarray(0, 4).toString()).toBe("%PDF");
   });
 });
-

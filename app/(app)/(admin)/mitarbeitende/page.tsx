@@ -22,8 +22,8 @@ const errorMessages: Record<string, string> = {
   "email-vergeben": "Diese E-Mail-Adresse ist bereits vergeben.",
   "letzter-admin": "Der letzte aktive Admin darf nicht deaktiviert oder degradiert werden.",
   "nicht-gefunden": "Diese Person wurde nicht gefunden.",
-  "speichern": "Die Aenderung konnte nicht gespeichert werden.",
-  "ungueltige-eingabe": "Bitte pruefe die Eingaben.",
+  "speichern": "Die Änderung konnte nicht gespeichert werden.",
+  "ungueltige-eingabe": "Bitte prüfe die Eingaben.",
 };
 
 const successMessages: Record<string, string> = {
@@ -237,7 +237,7 @@ export default async function EmployeesPage({
                       <StatusBadge status={employee.status} />
                       {employee.hasLogin ? (
                         <span className="inline-flex min-h-7 items-center rounded-md bg-secondary px-2 text-xs font-medium text-muted-foreground">
-                          Login verknuepft
+                          Login verknüpft
                         </span>
                       ) : null}
                     </span>
@@ -289,7 +289,7 @@ export default async function EmployeesPage({
                 {isLastActiveAdmin ? (
                   <div className="border-t bg-[#fff8e6] px-4 py-3 text-sm text-[#6f4f00]">
                     Der letzte aktive Admin kann nicht deaktiviert oder zur Rolle
-                    Mitarbeitende geaendert werden.
+                    Mitarbeitende geändert werden.
                   </div>
                 ) : null}
               </div>

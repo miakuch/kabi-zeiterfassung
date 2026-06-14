@@ -52,7 +52,7 @@ export function ReportChart({
       </div>
 
       {data.length > 0 ? (
-        <div className="h-[320px] min-w-0">
+        <div className="h-[300px] min-w-0 overflow-hidden sm:h-[340px]">
           <ResponsiveContainer height="100%" width="100%">
             {activeGrouping === "time" ? (
               <LineChart data={data} margin={{ bottom: 8, left: 0, right: 8, top: 8 }}>
@@ -83,7 +83,7 @@ export function ReportChart({
                   dataKey="label"
                   tick={{ fontSize: 12 }}
                   type="category"
-                  width={150}
+                  width={120}
                 />
                 <Tooltip formatter={(value) => [`${value} h`, "Stunden"]} />
                 <Bar dataKey="hours" fill="#2498ac" radius={[0, 4, 4, 0]} />
@@ -93,7 +93,7 @@ export function ReportChart({
         </div>
       ) : (
         <p className="rounded-md border border-dashed bg-background px-3 py-8 text-center text-sm text-muted-foreground">
-          Keine Daten fuer den gewaehlten Filter.
+          Keine Daten für den gewählten Filter.
         </p>
       )}
     </section>

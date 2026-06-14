@@ -5,13 +5,26 @@ import type { TaskPickerItem } from "./queries";
 type TaskPickerProps = {
   query: string;
   items: TaskPickerItem[];
+  selectedTaskId?: string;
 };
 
-export function TaskPicker({ query, items }: TaskPickerProps) {
+function taskHref(taskId: string, query: string) {
+  const params = new URLSearchParams();
+
+  params.set("selectedTask", taskId);
+
+  if (query) {
+    params.set("task", query);
+  }
+
+  return `/zeiten?${params.toString()}`;
+}
+
+export function TaskPicker({ query, items, selectedTaskId }: TaskPickerProps) {
   return (
     <section className="grid gap-4 rounded-md border bg-card p-4 sm:p-5">
       <div>
-        <h2 className="text-lg font-semibold">Aufgabe waehlen</h2>
+        <h2 className="text-lg font-semibold">Aufgabe wählen</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Suche nach Kunde, Projektkennung, Projektname oder Aufgabe.
         </p>
@@ -44,10 +57,15 @@ export function TaskPicker({ query, items }: TaskPickerProps) {
       <div className="grid gap-2" aria-live="polite">
         {items.length > 0 ? (
           items.map((item) => (
-            <button
-              className="grid min-h-16 gap-1 rounded-md border bg-background px-3 py-3 text-left transition hover:border-primary hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+            <a
+              className={[
+                "grid min-h-16 gap-1 rounded-md border bg-background px-3 py-3 text-left transition hover:border-primary hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30",
+                selectedTaskId === item.id ? "border-primary bg-accent" : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+              href={taskHref(item.id, query)}
               key={item.id}
-              type="button"
             >
               <span className="flex min-w-0 items-center gap-3">
                 <span
@@ -65,7 +83,7 @@ export function TaskPicker({ query, items }: TaskPickerProps) {
                   {item.defaultBillable ? "Abrechenbar" : "Nicht abrechenbar"}
                 </span>
               </span>
-            </button>
+            </a>
           ))
         ) : (
           <p className="rounded-md border border-dashed bg-background px-3 py-6 text-center text-sm text-muted-foreground">

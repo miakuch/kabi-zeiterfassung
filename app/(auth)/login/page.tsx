@@ -8,9 +8,9 @@ type LoginPageProps = {
 };
 
 const errorMessages: Record<string, string> = {
-  "ungueltige-email": "Bitte gib eine gueltige E-Mail-Adresse ein.",
+  "ungueltige-email": "Bitte gib eine gültige E-Mail-Adresse ein.",
   "magic-link": "Der Magic Link konnte nicht versendet werden.",
-  "login-nicht-erlaubt": "Dieser Login ist fuer die App nicht freigeschaltet.",
+  "login-nicht-erlaubt": "Dieser Login ist für die App nicht freigeschaltet.",
 };
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
@@ -36,7 +36,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           Per Magic Link anmelden
         </h1>
         <p className="mt-3 leading-7 text-muted-foreground">
-          Gib deine freigeschaltete E-Mail-Adresse ein. Du erhaeltst dann einen
+          Gib deine freigeschaltete E-Mail-Adresse ein. Du erhältst dann einen
           Anmeldelink per E-Mail.
         </p>
 
@@ -65,7 +65,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
         {sent ? (
           <p className="mt-4 rounded-md border border-primary/30 bg-accent px-3 py-2 text-sm text-accent-foreground">
-            Magic Link wurde versendet. Bitte pruefe dein Postfach.
+            Magic Link wurde versendet. Bitte prüfe dein Postfach.
           </p>
         ) : null}
 

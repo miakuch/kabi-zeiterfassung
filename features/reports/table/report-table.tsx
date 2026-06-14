@@ -139,7 +139,7 @@ export function ReportTable({
         <div>
           <h2 className="text-lg font-semibold">Detailtabelle</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            {entries.length} gefilterte Eintraege.
+            {entries.length} gefilterte Einträge.
           </p>
         </div>
 
@@ -151,12 +151,12 @@ export function ReportTable({
             )}
             href={showAmounts ? hideAmountsHref : showAmountsHref}
           >
-            {showAmounts ? "Betraege ausblenden" : "Betraege anzeigen"}
+            {showAmounts ? "Beträge ausblenden" : "Beträge anzeigen"}
           </a>
         ) : null}
       </div>
 
-      <div className="overflow-x-auto rounded-md border">
+      <div className="max-w-full overflow-x-auto rounded-md border">
         <table className="w-full min-w-[980px] border-collapse text-sm">
           <thead className="bg-secondary text-secondary-foreground">
             {table.getHeaderGroups().map((headerGroup) => (
@@ -200,7 +200,7 @@ export function ReportTable({
                   className="px-3 py-8 text-center text-muted-foreground"
                   colSpan={columns.length}
                 >
-                  Keine Eintraege fuer den gewaehlten Filter.
+                  Keine Einträge für den gewählten Filter.
                 </td>
               </tr>
             )}

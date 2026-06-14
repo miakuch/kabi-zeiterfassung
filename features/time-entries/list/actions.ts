@@ -89,7 +89,7 @@ export async function upsertTimeEntryFromListAction(
 
   if (!parsed.ok) {
     return {
-      formError: "Bitte pruefe die markierten Felder.",
+      formError: "Bitte prüfe die markierten Felder.",
       fieldErrors: parsed.fieldErrors,
     };
   }

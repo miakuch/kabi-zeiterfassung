@@ -33,6 +33,7 @@ import type { EntryMode, ManualEntryMode } from "./schema";
 
 type TimeEntryBarProps = {
   tasks: TaskPickerItem[];
+  initialTaskId?: string;
   initialEntryMode: EntryMode;
   initialManualMode: ManualEntryMode;
   today: string;
@@ -56,7 +57,7 @@ function fieldErrorMessage(field: keyof typeof fieldLabels, error?: string) {
   }
 
   if (error === "crosses-midnight") {
-    return `${fieldLabels[field]} verlaeuft ueber Mitternacht.`;
+    return `${fieldLabels[field]} verläuft über Mitternacht.`;
   }
 
   if (error === "end-not-after-start") {
@@ -64,7 +65,7 @@ function fieldErrorMessage(field: keyof typeof fieldLabels, error?: string) {
   }
 
   if (error === "invalid-time") {
-    return `${fieldLabels[field]} ist ungueltig.`;
+    return `${fieldLabels[field]} ist ungültig.`;
   }
 
   if (error === "invalid-duration") {
@@ -72,7 +73,7 @@ function fieldErrorMessage(field: keyof typeof fieldLabels, error?: string) {
   }
 
   if (error === "invalid-date") {
-    return "Datum ist ungueltig.";
+    return "Datum ist ungültig.";
   }
 
   return `${fieldLabels[field]} ist erforderlich.`;
@@ -80,6 +81,26 @@ function fieldErrorMessage(field: keyof typeof fieldLabels, error?: string) {
 
 function getTaskById(tasks: TaskPickerItem[], taskId: string) {
   return tasks.find((task) => task.id === taskId) ?? null;
+}
+
+function resolveInitialTaskId({
+  initialTaskId,
+  tasks,
+  timerTaskId,
+}: {
+  initialTaskId?: string;
+  tasks: TaskPickerItem[];
+  timerTaskId?: string;
+}) {
+  if (timerTaskId && getTaskById(tasks, timerTaskId)) {
+    return timerTaskId;
+  }
+
+  if (initialTaskId && getTaskById(tasks, initialTaskId)) {
+    return initialTaskId;
+  }
+
+  return tasks.length === 1 ? tasks[0]?.id ?? "" : "";
 }
 
 function formatElapsedTime(startedAtUtc: string, stoppedAtUtc?: string | null) {
@@ -102,6 +123,7 @@ function formatElapsedTime(startedAtUtc: string, stoppedAtUtc?: string | null) {
 
 export function TimeEntryBar({
   tasks,
+  initialTaskId,
   initialEntryMode,
   initialManualMode,
   today,
@@ -115,7 +137,13 @@ export function TimeEntryBar({
   const [manualMode, setManualMode] =
     useState<ManualEntryMode>(initialManualMode);
   const [description, setDescription] = useState(timerDraft?.description ?? "");
-  const [taskId, setTaskId] = useState(timerDraft?.taskId ?? "");
+  const resolvedInitialTaskId = resolveInitialTaskId({
+    initialTaskId,
+    tasks,
+    timerTaskId: timerDraft?.taskId,
+  });
+  const initialTask = getTaskById(tasks, resolvedInitialTaskId);
+  const [taskId, setTaskId] = useState(resolvedInitialTaskId);
   const [workDate, setWorkDate] = useState(today);
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
@@ -129,7 +157,9 @@ export function TimeEntryBar({
   const [timerEndTime, setTimerEndTime] = useState(
     timerDraft?.correctionEndTime ?? "",
   );
-  const [billable, setBillable] = useState(timerDraft?.billable ?? true);
+  const [billable, setBillable] = useState(
+    timerDraft?.billable ?? initialTask?.defaultBillable ?? true,
+  );
   const [elapsedTime, setElapsedTime] = useState(
     timerDraft ? formatElapsedTime(timerDraft.startedAtUtc, timerDraft.stoppedAtUtc) : "00:00:00",
   );
@@ -154,6 +184,7 @@ export function TimeEntryBar({
   const timerSaveFieldErrors = timerSaveState.fieldErrors ?? {};
 
   const selectedTask = useMemo(() => getTaskById(tasks, taskId), [tasks, taskId]);
+  const hasBookableTasks = tasks.length > 0;
   const hasTimerDraft = Boolean(timerDraft);
   const isRunningTimer = timerDraft?.status === "running";
   const isStoppedTimer = timerDraft?.status === "stopped";
@@ -215,7 +246,7 @@ export function TimeEntryBar({
             Beschreibung
             <input
               className={cn(
-                "min-h-11 rounded-md border bg-background px-3 text-base outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/25",
+                "min-h-11 w-full rounded-md border bg-background px-3 text-base outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/25",
                 errorClass("description"),
               )}
               name="description"
@@ -236,7 +267,7 @@ export function TimeEntryBar({
               onChange={(event) => onTaskChange(event.target.value)}
               value={taskId}
             >
-              <option value="">Aufgabe waehlen</option>
+              <option value="">Aufgabe wählen</option>
               {tasks.map((task) => (
                 <option key={task.id} value={task.id}>
                   {task.fullLabel}
@@ -299,7 +330,11 @@ export function TimeEntryBar({
                 <input name="description" type="hidden" value={description} />
                 <input name="taskId" type="hidden" value={taskId} />
                 <input name="billable" type="hidden" value={billable ? "1" : "0"} />
-                <Button className="min-h-11 w-full" disabled={isStartingTimer} type="submit">
+                <Button
+                  className="min-h-11 w-full"
+                  disabled={isStartingTimer || !hasBookableTasks}
+                  type="submit"
+                >
                   <Play className="size-4" aria-hidden="true" />
                   Start
                 </Button>
@@ -329,7 +364,7 @@ export function TimeEntryBar({
           <input name="billable" type="hidden" value={billable ? "1" : "0"} />
           <Button type="submit" variant="outline">
             <Save className="size-4" aria-hidden="true" />
-            Aendern
+            Ändern
           </Button>
         </form>
       ) : null}
@@ -430,9 +465,13 @@ export function TimeEntryBar({
               )}
             </div>
 
-            <Button className="min-h-11 self-end" disabled={isSubmitting} type="submit">
+            <Button
+              className="min-h-11 self-end"
+              disabled={isSubmitting || !hasBookableTasks}
+              type="submit"
+            >
               <Plus className="size-4" aria-hidden="true" />
-              Hinzufuegen
+              Hinzufügen
             </Button>
           </div>
         </form>
@@ -529,7 +568,17 @@ export function TimeEntryBar({
           />
           {selectedTask.compactLabel}
         </p>
-      ) : null}
+      ) : hasBookableTasks ? (
+        <p className="rounded-md border border-dashed bg-background px-3 py-2 text-sm text-muted-foreground">
+          Wähle eine Aufgabe aus, bevor du den Timer startest oder einen Eintrag
+          hinzufügst.
+        </p>
+      ) : (
+        <p className="rounded-md border border-dashed bg-background px-3 py-2 text-sm text-muted-foreground">
+          Es gibt noch keine buchbare Aufgabe. Lege zuerst einen aktiven Kunden,
+          ein aktives Projekt und eine aktive Aufgabe an.
+        </p>
+      )}
 
       {manualState.formError ? (
         <div className="grid gap-1 rounded-md border border-destructive/30 bg-background px-3 py-2 text-sm text-destructive">
@@ -547,8 +596,13 @@ export function TimeEntryBar({
           {timerStartState.formError ? <p>{timerStartState.formError}</p> : null}
           {timerSaveState.formError ? <p>{timerSaveState.formError}</p> : null}
           {pageErrorMessage ? <p>{pageErrorMessage}</p> : null}
+          {Object.entries(timerStartFieldErrors).map(([field, error]) => (
+            <p key={`start-${field}`}>
+              {fieldErrorMessage(field as keyof typeof fieldLabels, error)}
+            </p>
+          ))}
           {Object.entries(timerSaveFieldErrors).map(([field, error]) => (
-            <p key={field}>
+            <p key={`save-${field}`}>
               {fieldErrorMessage(field as keyof typeof fieldLabels, error)}
             </p>
           ))}
@@ -564,8 +618,8 @@ export function TimeEntryBar({
       {entryMode === "timer" && timerDraft?.suspicions.length ? (
         <p className="rounded-md border border-destructive/30 bg-background px-3 py-2 text-sm text-destructive">
           {timerDraft.suspicions.includes("over-midnight")
-            ? "Timer laeuft ueber Mitternacht. Bitte vor dem Speichern Datum, Start und Ende korrigieren."
-            : "Timer laeuft seit mindestens 10 Stunden. Bitte vor dem Speichern pruefen."}
+            ? "Timer läuft über Mitternacht. Bitte vor dem Speichern Datum, Start und Ende korrigieren."
+            : "Timer läuft seit mindestens 10 Stunden. Bitte vor dem Speichern prüfen."}
         </p>
       ) : null}
     </section>

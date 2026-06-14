@@ -1,6 +1,13 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useState, useTransition } from "react";
+import {
+  useActionState,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import {
   CalendarDays,
   Clock,
@@ -157,6 +164,8 @@ export function TimeEntryBar({
   const [timerEndTime, setTimerEndTime] = useState(
     timerDraft?.correctionEndTime ?? "",
   );
+  const workDateInputRef = useRef<HTMLInputElement>(null);
+  const timerWorkDateInputRef = useRef<HTMLInputElement>(null);
   const [billable, setBillable] = useState(
     timerDraft?.billable ?? initialTask?.defaultBillable ?? true,
   );
@@ -228,6 +237,15 @@ export function TimeEntryBar({
     const nextTask = getTaskById(tasks, nextTaskId);
     setTaskId(nextTaskId);
     setBillable(nextTask?.defaultBillable ?? true);
+  }
+
+  function openDatePicker(input: HTMLInputElement | null) {
+    if (!input) {
+      return;
+    }
+
+    input.showPicker?.();
+    input.focus();
   }
 
   function errorClass(field: keyof typeof fieldLabels) {
@@ -380,17 +398,22 @@ export function TimeEntryBar({
             <label className="grid gap-1 text-sm font-medium">
               Datum
               <span className="relative">
-                <CalendarDays
-                  className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-                  aria-hidden="true"
-                />
+                <button
+                  aria-label="Kalender öffnen"
+                  className="absolute left-2 top-1/2 flex size-7 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition hover:bg-secondary hover:text-foreground"
+                  onClick={() => openDatePicker(workDateInputRef.current)}
+                  type="button"
+                >
+                  <CalendarDays className="size-4" aria-hidden="true" />
+                </button>
                 <input
                   className={cn(
-                    "min-h-11 w-full rounded-md border bg-background pl-10 pr-3 text-base outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/25",
+                    "date-input-with-picker min-h-11 w-full rounded-md border bg-background pl-10 pr-3 text-base outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/25",
                     errorClass("workDate"),
                   )}
                   name="workDate"
                   onChange={(event) => setWorkDate(event.target.value)}
+                  ref={workDateInputRef}
                   type="date"
                   value={workDate}
                 />
@@ -488,17 +511,22 @@ export function TimeEntryBar({
             <label className="grid gap-1 text-sm font-medium">
               Datum
               <span className="relative">
-                <CalendarDays
-                  className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-                  aria-hidden="true"
-                />
+                <button
+                  aria-label="Kalender öffnen"
+                  className="absolute left-2 top-1/2 flex size-7 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition hover:bg-secondary hover:text-foreground"
+                  onClick={() => openDatePicker(timerWorkDateInputRef.current)}
+                  type="button"
+                >
+                  <CalendarDays className="size-4" aria-hidden="true" />
+                </button>
                 <input
                   className={cn(
-                    "min-h-11 w-full rounded-md border bg-background pl-10 pr-3 text-base outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/25",
+                    "date-input-with-picker min-h-11 w-full rounded-md border bg-background pl-10 pr-3 text-base outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/25",
                     errorClass("workDate"),
                   )}
                   name="workDate"
                   onChange={(event) => setTimerWorkDate(event.target.value)}
+                  ref={timerWorkDateInputRef}
                   type="date"
                   value={timerWorkDate}
                 />

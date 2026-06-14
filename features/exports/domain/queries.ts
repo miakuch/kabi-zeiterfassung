@@ -171,7 +171,7 @@ export async function getProjectMonthExportData({
   const { data: entriesData, error: entriesError } = await admin
     .from("time_entries")
     .select(
-      "id, description, work_date, start_time, end_time, duration_minutes, billable, employees(name, email), tasks(name, projects(id, name, code, customers(name)))",
+      "id, description, work_date, start_time, end_time, duration_minutes, billable, employees!time_entries_employee_id_fkey(name, email), tasks(name, projects(id, name, code, customers(name)))",
     )
     .eq("billable", true)
     .in("task_id", taskIds)
@@ -179,6 +179,7 @@ export async function getProjectMonthExportData({
     .lte("work_date", exportShell.endDate);
 
   if (entriesError) {
+    console.error("Export time entries query failed", entriesError);
     throw new Error("Exportdaten konnten nicht geladen werden.");
   }
 

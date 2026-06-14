@@ -237,7 +237,7 @@ export async function getReportOverview({
   let query = supabase
     .from("time_entries")
     .select(
-      "id, employee_id, task_id, description, work_date, start_time, end_time, duration_minutes, billable, tasks(id, name, project_id, projects(id, name, code, customers(id, name))), employees(id, name)",
+      "id, employee_id, task_id, description, work_date, start_time, end_time, duration_minutes, billable, tasks(id, name, project_id, projects(id, name, code, customers(id, name))), employees!time_entries_employee_id_fkey(id, name)",
     )
     .gte("work_date", filters.startDate)
     .lte("work_date", filters.endDate)
@@ -262,6 +262,7 @@ export async function getReportOverview({
   const { data, error } = await query;
 
   if (error) {
+    console.error("Report overview query failed", error);
     throw new Error("Berichtsdaten konnten nicht geladen werden.");
   }
 

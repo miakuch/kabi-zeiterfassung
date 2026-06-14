@@ -65,3 +65,7 @@ body {
     Helvetica,
     sans-serif;
 }
+
+.date-input-with-picker::-webkit-calendar-picker-indicator {
+  display: none;
+}

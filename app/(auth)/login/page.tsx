@@ -1,5 +1,4 @@
 import Image from "next/image";
-import { requestMagicLink } from "./actions";
 
 type LoginPageProps = {
   searchParams: Promise<{
@@ -41,7 +40,11 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           Anmeldelink per E-Mail.
         </p>
 
-        <form action={requestMagicLink} className="mt-8 grid gap-4">
+        <form
+          action="/login/request-magic-link"
+          className="mt-8 grid gap-4"
+          method="post"
+        >
           <label className="grid gap-2 text-sm font-medium">
             E-Mail-Adresse
             <input

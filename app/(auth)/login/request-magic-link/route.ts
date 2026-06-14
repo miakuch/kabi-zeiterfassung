@@ -1,39 +1,39 @@
-"use server";
-
-import { redirect } from "next/navigation";
-import { headers } from "next/headers";
+import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
-import { getPublicEnv } from "@/lib/env";
 import { resolveAppOrigin } from "@/lib/auth/app-origin";
+import { getPublicEnv } from "@/lib/env";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const loginSchema = z.object({
   email: z.string().trim().toLowerCase().email(),
 });
 
-export async function requestMagicLink(formData: FormData) {
+function loginRedirect(request: NextRequest, query: string) {
+  return NextResponse.redirect(new URL(`/login?${query}`, request.url), 303);
+}
+
+export async function POST(request: NextRequest) {
+  const formData = await request.formData();
   const parsed = loginSchema.safeParse({
     email: formData.get("email"),
   });
 
   if (!parsed.success) {
-    redirect("/login?error=ungueltige-email");
+    return loginRedirect(request, "error=ungueltige-email");
   }
 
   const env = getPublicEnv();
-  const requestHeaders = await headers();
   const appUrl = resolveAppOrigin(
-    requestHeaders,
+    request.headers,
     env.NEXT_PUBLIC_APP_URL,
     process.env.VERCEL_ENV === "production",
   );
 
   if (!appUrl) {
-    redirect("/login?error=magic-link");
+    return loginRedirect(request, "error=magic-link");
   }
 
   const supabase = await createSupabaseServerClient();
-
   const { error } = await supabase.auth.signInWithOtp({
     email: parsed.data.email,
     options: {
@@ -42,8 +42,9 @@ export async function requestMagicLink(formData: FormData) {
   });
 
   if (error) {
-    redirect("/login?error=magic-link");
+    console.error("Magic link request failed", error.message);
+    return loginRedirect(request, "error=magic-link");
   }
 
-  redirect("/login?sent=1");
+  return loginRedirect(request, "sent=1");
 }

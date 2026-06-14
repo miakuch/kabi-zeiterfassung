@@ -128,6 +128,17 @@ Zwischenbefund beim Production-Vergleich:
   - Additional Redirect URLs enthalten
     `https://kabi-zeiterfassung.vercel.app/**`.
 
+Zwischenbefund beim Production-Login-Button:
+
+- Der Button war im DOM aktiv und nicht verdeckt, wirkte im Browser aber ohne
+  sichtbare Rueckmeldung.
+- Ein direkter POST gegen Production erreichte den Server und leitete auf
+  `/login?error=magic-link` weiter.
+- Code-Fix: Der Magic-Link-Versand laeuft nun ueber eine klassische
+  POST-Route `/login/request-magic-link` statt ueber eine Server Action. Damit
+  zeigt der Browser nach dem Klick stabil entweder `/login?sent=1` oder
+  `/login?error=magic-link`.
+
 ## Vercel Erwartung
 
 Preview:

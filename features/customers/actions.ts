@@ -1,8 +1,13 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdminSession } from "@/lib/auth/require-session";
+import {
+  CACHE_TAG_PROJECT_DETAIL_OPTIONS,
+  CACHE_TAG_REPORT_FILTER_OPTIONS,
+  CACHE_TAG_TASK_PICKER_ITEMS,
+} from "@/lib/cache/tags";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getActiveProjectCount } from "./queries";
 import {
@@ -30,6 +35,12 @@ function isUniqueViolation(error: { code?: string }) {
   return error.code === "23505";
 }
 
+function revalidateCustomerMasterData() {
+  updateTag(CACHE_TAG_PROJECT_DETAIL_OPTIONS);
+  updateTag(CACHE_TAG_REPORT_FILTER_OPTIONS);
+  updateTag(CACHE_TAG_TASK_PICKER_ITEMS);
+}
+
 export async function createCustomer(formData: FormData) {
   await requireAdminSession();
 
@@ -54,6 +65,7 @@ export async function createCustomer(formData: FormData) {
   }
 
   revalidatePath("/kunden");
+  revalidateCustomerMasterData();
   redirect(customerSuccessPath("angelegt"));
 }
 
@@ -86,6 +98,7 @@ export async function updateCustomer(formData: FormData) {
   }
 
   revalidatePath("/kunden");
+  revalidateCustomerMasterData();
   redirect(customerSuccessPath("aktualisiert"));
 }
 
@@ -123,6 +136,7 @@ export async function deactivateCustomer(formData: FormData) {
   }
 
   revalidatePath("/kunden");
+  revalidateCustomerMasterData();
   redirect(customerSuccessPath("deaktiviert"));
 }
 
@@ -149,5 +163,6 @@ export async function activateCustomer(formData: FormData) {
   }
 
   revalidatePath("/kunden");
+  revalidateCustomerMasterData();
   redirect(customerSuccessPath("aktiviert"));
 }

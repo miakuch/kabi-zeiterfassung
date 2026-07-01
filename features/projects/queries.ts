@@ -1,6 +1,7 @@
 import "server-only";
 
-import { unstable_noStore as noStore } from "next/cache";
+import { unstable_cache, unstable_noStore as noStore } from "next/cache";
+import { CACHE_TAG_PROJECT_DETAIL_OPTIONS } from "@/lib/cache/tags";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import {
   calculateProjectBudgetSummary,
@@ -194,35 +195,41 @@ function toNumber(value: string | number | null) {
   return typeof value === "number" ? value : Number(value);
 }
 
+const getProjectDetailOptionsCached = unstable_cache(
+  async (): Promise<ProjectDetailOptions> => {
+    const admin = createSupabaseAdminClient();
+    const [
+      { data: customersData, error: customersError },
+      { data: employeesData, error: employeesError },
+    ] = await Promise.all([
+      admin.from("customers").select("id, name, status").order("name"),
+      admin.from("employees").select("id, name, email, status").order("name"),
+    ]);
+
+    if (customersError || employeesError) {
+      throw new Error("Projektoptionen konnten nicht geladen werden.");
+    }
+
+    return {
+      customers: ((customersData ?? []) as CustomerOptionRow[]).map((customer) => ({
+        id: customer.id,
+        name: customer.name,
+        status: customer.status,
+      })),
+      employees: ((employeesData ?? []) as EmployeeOptionRow[]).map((employee) => ({
+        id: employee.id,
+        name: employee.name,
+        email: employee.email,
+        status: employee.status,
+      })),
+    };
+  },
+  ["project-detail-options"],
+  { tags: [CACHE_TAG_PROJECT_DETAIL_OPTIONS] },
+);
+
 export async function getProjectDetailOptions(): Promise<ProjectDetailOptions> {
-  noStore();
-
-  const admin = createSupabaseAdminClient();
-  const [
-    { data: customersData, error: customersError },
-    { data: employeesData, error: employeesError },
-  ] = await Promise.all([
-    admin.from("customers").select("id, name, status").order("name"),
-    admin.from("employees").select("id, name, email, status").order("name"),
-  ]);
-
-  if (customersError || employeesError) {
-    throw new Error("Projektoptionen konnten nicht geladen werden.");
-  }
-
-  return {
-    customers: ((customersData ?? []) as CustomerOptionRow[]).map((customer) => ({
-      id: customer.id,
-      name: customer.name,
-      status: customer.status,
-    })),
-    employees: ((employeesData ?? []) as EmployeeOptionRow[]).map((employee) => ({
-      id: employee.id,
-      name: employee.name,
-      email: employee.email,
-      status: employee.status,
-    })),
-  };
+  return getProjectDetailOptionsCached();
 }
 
 export async function getProjectDetail(

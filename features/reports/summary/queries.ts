@@ -74,6 +74,10 @@ type ProjectDefaultRateRow = {
   default_hourly_rate: string | number | null;
 };
 
+type TaskIdRow = {
+  id: string;
+};
+
 function firstRelated<T>(value: T | T[] | null) {
   return Array.isArray(value) ? (value[0] ?? null) : value;
 }
@@ -139,6 +143,31 @@ function applyNestedFilters(entries: ReportEntry[], filters: ReportFilterState) 
 
     return true;
   });
+}
+
+function emptyReportOverview({
+  employee,
+  filters,
+  grouping,
+}: {
+  employee: CurrentEmployee;
+  filters: ReportFilterState;
+  grouping: ReportChartGrouping;
+}): ReportOverview {
+  const entries: ReportEntry[] = [];
+
+  return {
+    entries,
+    summary: calculateReportSummary({ entries, role: employee.role }),
+    chartData: buildReportChartData({
+      entries,
+      grouping,
+      startDate: filters.startDate,
+      endDate: filters.endDate,
+    }),
+    grouping,
+    availableGroupings: safeGroupings(employee.role),
+  };
 }
 
 async function addAdminAmounts(entries: ReportEntry[]) {
@@ -234,6 +263,43 @@ export async function getReportOverview({
   noStore();
 
   const supabase = await createSupabaseServerClient();
+  let taskIds: string[] | null = null;
+
+  if (filters.taskId) {
+    taskIds = [filters.taskId];
+  } else if (filters.projectId || filters.customerId) {
+    let taskFilterQuery = supabase
+      .from("tasks")
+      .select("id, project_id, projects!inner(customer_id)")
+      .limit(10000);
+
+    if (filters.projectId) {
+      taskFilterQuery = taskFilterQuery.eq("project_id", filters.projectId);
+    }
+
+    if (filters.customerId) {
+      taskFilterQuery = taskFilterQuery.eq(
+        "projects.customer_id",
+        filters.customerId,
+      );
+    }
+
+    const { data: taskFilterData, error: taskFilterError } = await taskFilterQuery;
+
+    if (taskFilterError) {
+      console.error("Report task filter query failed", taskFilterError);
+      throw new Error("Berichtsfilter konnten nicht angewendet werden.");
+    }
+
+    taskIds = ((taskFilterData ?? []) as unknown as TaskIdRow[]).map(
+      (task) => task.id,
+    );
+
+    if (taskIds.length === 0) {
+      return emptyReportOverview({ employee, filters, grouping });
+    }
+  }
+
   let query = supabase
     .from("time_entries")
     .select(
@@ -249,8 +315,8 @@ export async function getReportOverview({
     query = query.eq("employee_id", filters.employeeId);
   }
 
-  if (filters.taskId) {
-    query = query.eq("task_id", filters.taskId);
+  if (taskIds !== null) {
+    query = query.in("task_id", taskIds);
   }
 
   if (filters.billable === "billable") {

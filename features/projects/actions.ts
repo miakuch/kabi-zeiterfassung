@@ -1,9 +1,14 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { type z } from "zod";
 import { requireAdminSession } from "@/lib/auth/require-session";
+import {
+  CACHE_TAG_PROJECT_DETAIL_OPTIONS,
+  CACHE_TAG_REPORT_FILTER_OPTIONS,
+  CACHE_TAG_TASK_PICKER_ITEMS,
+} from "@/lib/cache/tags";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import {
   formValue,
@@ -38,6 +43,12 @@ function newProjectPath(params: Record<string, string>) {
 
 function isUniqueViolation(error: { code?: string }) {
   return error.code === "23505";
+}
+
+function revalidateProjectMasterData() {
+  updateTag(CACHE_TAG_PROJECT_DETAIL_OPTIONS);
+  updateTag(CACHE_TAG_REPORT_FILTER_OPTIONS);
+  updateTag(CACHE_TAG_TASK_PICKER_ITEMS);
 }
 
 function projectPayload(parsed: z.infer<typeof projectFormSchema>) {
@@ -96,6 +107,7 @@ export async function createProject(formData: FormData) {
   }
 
   revalidatePath("/projekte");
+  revalidateProjectMasterData();
   redirect(projectDetailPath(project.id as string, { success: "angelegt" }));
 }
 
@@ -138,6 +150,7 @@ export async function updateProject(formData: FormData) {
 
   revalidatePath("/projekte");
   revalidatePath(`/projekte/${parsedId.data}`);
+  revalidateProjectMasterData();
   redirect(projectDetailPath(parsedId.data, { success: "aktualisiert" }));
 }
 
@@ -207,6 +220,7 @@ export async function upsertTask(formData: FormData) {
   }
 
   revalidatePath(`/projekte/${parsed.data.projectId}`);
+  revalidateProjectMasterData();
   redirect(projectDetailPath(parsed.data.projectId, { success: "aufgabe" }));
 }
 

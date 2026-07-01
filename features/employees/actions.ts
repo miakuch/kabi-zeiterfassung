@@ -1,8 +1,12 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdminSession } from "@/lib/auth/require-session";
+import {
+  CACHE_TAG_PROJECT_DETAIL_OPTIONS,
+  CACHE_TAG_REPORT_FILTER_OPTIONS,
+} from "@/lib/cache/tags";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { wouldRemoveLastActiveAdmin } from "./domain";
 import {
@@ -29,6 +33,11 @@ function employeeSuccessPath(success: string) {
 
 function isUniqueViolation(error: { code?: string }) {
   return error.code === "23505";
+}
+
+function revalidateEmployeeMasterData() {
+  updateTag(CACHE_TAG_PROJECT_DETAIL_OPTIONS);
+  updateTag(CACHE_TAG_REPORT_FILTER_OPTIONS);
 }
 
 async function ensureLastAdminIsPreserved({
@@ -97,6 +106,7 @@ export async function createEmployee(formData: FormData) {
   });
 
   revalidatePath("/mitarbeitende");
+  revalidateEmployeeMasterData();
   redirect(employeeSuccessPath("angelegt"));
 }
 
@@ -139,6 +149,7 @@ export async function updateEmployee(formData: FormData) {
   }
 
   revalidatePath("/mitarbeitende");
+  revalidateEmployeeMasterData();
   redirect(employeeSuccessPath("aktualisiert"));
 }
 
@@ -170,6 +181,7 @@ export async function deactivateEmployee(formData: FormData) {
   }
 
   revalidatePath("/mitarbeitende");
+  revalidateEmployeeMasterData();
   redirect(employeeSuccessPath("deaktiviert"));
 }
 
@@ -195,5 +207,6 @@ export async function activateEmployee(formData: FormData) {
   }
 
   revalidatePath("/mitarbeitende");
+  revalidateEmployeeMasterData();
   redirect(employeeSuccessPath("aktiviert"));
 }

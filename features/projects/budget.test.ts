@@ -8,7 +8,7 @@ describe("project budget calculation", () => {
         hourlyBudget: 10,
         amountBudget: null,
         budgetAlertBasis: "hours",
-        defaultHourlyRate: null,
+        defaultHourlyRate: 100,
         entries: [
           { employeeId: "a", durationMinutes: 120 },
           { employeeId: "b", durationMinutes: 180 },
@@ -22,6 +22,25 @@ describe("project budget calculation", () => {
       status: "ok",
       hoursUsagePercent: 50,
       remainingHours: 5,
+      remainingAmount: 500,
+    });
+  });
+
+  it("derives open hours from amount budget and default rate", () => {
+    expect(
+      calculateProjectBudgetSummary({
+        hourlyBudget: null,
+        amountBudget: 1200,
+        budgetAlertBasis: "amount",
+        defaultHourlyRate: 100,
+        entries: [{ employeeId: "a", durationMinutes: 180 }],
+        memberRates: [],
+      }),
+    ).toMatchObject({
+      usedHours: 3,
+      usedAmount: 300,
+      remainingHours: 9,
+      remainingAmount: 900,
     });
   });
 

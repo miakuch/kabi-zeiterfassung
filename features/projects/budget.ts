@@ -49,6 +49,34 @@ function usagePercent(used: number, budget: number | null) {
   return Math.round((used / budget) * 1000) / 10;
 }
 
+function derivedHourlyBudget(input: ProjectBudgetInput) {
+  if (input.hourlyBudget !== null) {
+    return input.hourlyBudget;
+  }
+
+  if (
+    input.amountBudget !== null &&
+    input.defaultHourlyRate !== null &&
+    input.defaultHourlyRate > 0
+  ) {
+    return input.amountBudget / input.defaultHourlyRate;
+  }
+
+  return null;
+}
+
+function derivedAmountBudget(input: ProjectBudgetInput) {
+  if (input.amountBudget !== null) {
+    return input.amountBudget;
+  }
+
+  if (input.hourlyBudget !== null && input.defaultHourlyRate !== null) {
+    return input.hourlyBudget * input.defaultHourlyRate;
+  }
+
+  return null;
+}
+
 function inferBasis(input: ProjectBudgetInput): BudgetAlertBasis {
   if (input.budgetAlertBasis) {
     return input.budgetAlertBasis;
@@ -98,9 +126,11 @@ export function calculateProjectBudgetSummary(
 
     return sum + (entry.durationMinutes / 60) * hourlyRate;
   }, 0);
+  const effectiveHourlyBudget = derivedHourlyBudget(input);
+  const effectiveAmountBudget = derivedAmountBudget(input);
   const basis = inferBasis(input);
-  const hoursUsagePercent = usagePercent(usedHours, input.hourlyBudget);
-  const amountUsagePercent = usagePercent(usedAmount, input.amountBudget);
+  const hoursUsagePercent = usagePercent(usedHours, effectiveHourlyBudget);
+  const amountUsagePercent = usagePercent(usedAmount, effectiveAmountBudget);
   const relevantPercent =
     basis === "hours"
       ? hoursUsagePercent
@@ -117,12 +147,12 @@ export function calculateProjectBudgetSummary(
     hoursUsagePercent,
     amountUsagePercent,
     remainingHours:
-      input.hourlyBudget === null
+      effectiveHourlyBudget === null
         ? null
-        : roundHours(input.hourlyBudget - usedHours),
+        : roundHours(effectiveHourlyBudget - usedHours),
     remainingAmount:
-      input.amountBudget === null
+      effectiveAmountBudget === null
         ? null
-        : roundCurrency(input.amountBudget - usedAmount),
+        : roundCurrency(effectiveAmountBudget - usedAmount),
   };
 }

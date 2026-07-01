@@ -186,26 +186,30 @@ function StatTile({
 
 function ProjectMetric({
   label,
-  primary,
-  secondary,
-  icon: Icon,
+  hours,
+  amount,
 }: {
   label: string;
-  primary: string;
-  secondary: string;
-  icon: typeof Clock3;
+  hours: string;
+  amount: string;
 }) {
   return (
     <div className="grid gap-2">
       <p className="text-xs font-semibold uppercase text-muted-foreground">
         {label}
       </p>
-      <div className="flex items-start gap-2">
-        <Icon className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-        <div className="min-w-0">
-          <p className="font-semibold tabular-nums">{primary}</p>
-          <p className="mt-1 text-sm text-muted-foreground tabular-nums">
-            {secondary}
+      <div className="grid gap-1.5">
+        <div className="flex items-center gap-2">
+          <Clock3 className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+          <p className="font-semibold tabular-nums">{hours}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <CircleDollarSign
+            className="size-4 shrink-0 text-muted-foreground"
+            aria-hidden="true"
+          />
+          <p className="text-sm text-muted-foreground tabular-nums">
+            {amount}
           </p>
         </div>
       </div>
@@ -355,17 +359,15 @@ export default async function ProjectsPage() {
                 </div>
 
                 <ProjectMetric
-                  icon={Clock3}
                   label="Verbrauch"
-                  primary={formatHours(project.usedHours)}
-                  secondary={formatMoney(project.usedAmount)}
+                  hours={formatHours(project.usedHours)}
+                  amount={formatMoney(project.usedAmount)}
                 />
 
                 <ProjectMetric
-                  icon={CircleDollarSign}
                   label="Offen"
-                  primary={formatHours(project.remainingHours)}
-                  secondary={formatMoney(project.remainingAmount)}
+                  hours={formatHours(project.remainingHours)}
+                  amount={formatMoney(project.remainingAmount)}
                 />
 
                 <div className="flex justify-end xl:justify-center">

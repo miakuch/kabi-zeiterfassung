@@ -34,7 +34,7 @@ describe("manual time entry validation", () => {
         workDate: "2026-06-13",
         startTime: "14:15",
         endTime: "",
-        durationMinutes: "45",
+        durationMinutes: "00:45",
         billable: false,
         manualMode: "duration",
       }),
@@ -73,6 +73,44 @@ describe("manual time entry validation", () => {
     });
   });
 
+  it("rejects duration values outside hh:mm format", () => {
+    expect(
+      validateManualTimeEntry({
+        taskId,
+        description: "Dokumentation",
+        workDate: "2026-06-13",
+        startTime: "14:15",
+        endTime: "",
+        durationMinutes: "45",
+        billable: true,
+        manualMode: "duration",
+      }),
+    ).toMatchObject({
+      ok: false,
+      fieldErrors: {
+        durationMinutes: "invalid-duration",
+      },
+    });
+
+    expect(
+      validateManualTimeEntry({
+        taskId,
+        description: "Dokumentation",
+        workDate: "2026-06-13",
+        startTime: "14:15",
+        endTime: "",
+        durationMinutes: "00:00",
+        billable: true,
+        manualMode: "duration",
+      }),
+    ).toMatchObject({
+      ok: false,
+      fieldErrors: {
+        durationMinutes: "invalid-duration",
+      },
+    });
+  });
+
   it("rejects entries crossing midnight", () => {
     expect(
       validateManualTimeEntry({
@@ -81,7 +119,7 @@ describe("manual time entry validation", () => {
         workDate: "2026-06-13",
         startTime: "23:30",
         endTime: "",
-        durationMinutes: "60",
+        durationMinutes: "01:00",
         billable: true,
         manualMode: "duration",
       }),

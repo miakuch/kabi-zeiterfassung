@@ -76,7 +76,7 @@ function fieldErrorMessage(field: keyof typeof fieldLabels, error?: string) {
   }
 
   if (error === "invalid-duration") {
-    return "Dauer muss mindestens 1 Minute sein.";
+    return "Dauer muss im Format hh:mm und mindestens 00:01 sein.";
   }
 
   if (error === "invalid-date") {
@@ -476,12 +476,12 @@ export function TimeEntryBar({
                       "min-h-11 rounded-md border bg-background px-3 text-base outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/25",
                       errorClass("durationMinutes"),
                     )}
-                    min="1"
+                    inputMode="numeric"
                     name="durationMinutes"
                     onChange={(event) => setDurationMinutes(event.target.value)}
-                    placeholder="Minuten"
-                    step="1"
-                    type="number"
+                    pattern="[0-9]{1,2}:[0-5][0-9]"
+                    placeholder="01:30"
+                    type="text"
                     value={durationMinutes}
                   />
                 </label>

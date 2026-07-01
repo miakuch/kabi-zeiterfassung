@@ -1,58 +1,13 @@
 import Image from "next/image";
-import Link from "next/link";
-import {
-  BarChart3,
-  BriefcaseBusiness,
-  Building2,
-  Clock3,
-  LogOut,
-  Menu,
-  UsersRound,
-} from "lucide-react";
+import { LogOut, Menu } from "lucide-react";
 import { signOut } from "@/app/(app)/actions";
 import { type CurrentEmployee } from "@/lib/auth/require-session";
+import { Navigation } from "./navigation";
 
 type AppShellProps = {
   employee: CurrentEmployee;
   children: React.ReactNode;
 };
-
-const employeeItems = [
-  { href: "/zeiten", label: "Zeiten", icon: Clock3 },
-  { href: "/berichte", label: "Berichte", icon: BarChart3 },
-];
-
-const adminItems = [
-  { href: "/projekte", label: "Projekte", icon: BriefcaseBusiness },
-  { href: "/kunden", label: "Kunden", icon: Building2 },
-  { href: "/mitarbeitende", label: "Mitarbeitende", icon: UsersRound },
-];
-
-function Navigation({ employee }: { employee: CurrentEmployee }) {
-  const items =
-    employee.role === "admin"
-      ? [...employeeItems, ...adminItems]
-      : employeeItems;
-
-  return (
-    <nav aria-label="Hauptnavigation" className="grid gap-1">
-      {items.map((item) => {
-        const Icon = item.icon;
-
-        return (
-          <Link
-            className="flex min-h-11 items-center gap-3 rounded-md px-3 text-sm font-medium text-muted-foreground transition hover:bg-accent hover:text-accent-foreground"
-            href={item.href}
-            key={item.href}
-          >
-            <Icon className="size-4" aria-hidden="true" />
-            {item.label}
-          </Link>
-        );
-      })}
-    </nav>
-  );
-}
 
 export function AppShell({ employee, children }: AppShellProps) {
   const roleLabel = employee.role === "admin" ? "Admin" : "Mitarbeitende";
@@ -75,7 +30,7 @@ export function AppShell({ employee, children }: AppShellProps) {
         </div>
 
         <div className="mt-8 flex-1">
-          <Navigation employee={employee} />
+          <Navigation role={employee.role} />
         </div>
 
         <div className="border-t pt-4">
@@ -104,7 +59,7 @@ export function AppShell({ employee, children }: AppShellProps) {
                 <span className="sr-only">Navigation öffnen</span>
               </summary>
               <div className="absolute left-0 top-12 w-[calc(100vw-2rem)] max-w-72 rounded-md border bg-card p-3 shadow-lg">
-                <Navigation employee={employee} />
+                <Navigation role={employee.role} />
               </div>
             </details>
 

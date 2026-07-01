@@ -10,7 +10,6 @@ import {
   getTimeEntryPreferences,
   getTodayInBerlin,
 } from "@/features/time-entry-bar/queries";
-import { TaskPicker } from "@/features/tasks/task-picker/task-picker";
 import { getTaskPickerItems } from "@/features/tasks/task-picker/queries";
 
 type TimesPageProps = {
@@ -18,7 +17,6 @@ type TimesPageProps = {
     error?: string;
     page?: string;
     selectedTask?: string;
-    task?: string;
     success?: string;
   }>;
 };
@@ -27,10 +25,8 @@ export default async function TimesPage({ searchParams }: TimesPageProps) {
   const employee = await requireEmployeeSession();
 
   const params = await searchParams;
-  const taskQuery = params.task ?? "";
-  const [taskItems, pickerTaskItems, preferences, timerDraft] = await Promise.all([
+  const [taskItems, preferences, timerDraft] = await Promise.all([
     getTaskPickerItems({ query: "", limit: 500 }),
-    getTaskPickerItems({ query: taskQuery, limit: 100 }),
     getTimeEntryPreferences(employee.id),
     getCurrentTimerDraft(employee.id),
   ]);
@@ -65,6 +61,9 @@ export default async function TimesPage({ searchParams }: TimesPageProps) {
     ? successMessages[params.success]
     : undefined;
   const errorMessage = params.error ? errorMessages[params.error] : undefined;
+  const timerDraftKey = timerDraft
+    ? `${timerDraft.id}:${timerDraft.status}:${timerDraft.stoppedAtUtc ?? "running"}`
+    : "no-timer";
 
   return (
     <section className="grid gap-6">
@@ -79,6 +78,7 @@ export default async function TimesPage({ searchParams }: TimesPageProps) {
         initialTaskId={params.selectedTask}
         initialEntryMode={preferences.lastEntryMode}
         initialManualMode={preferences.lastManualMode}
+        key={timerDraftKey}
         pageErrorMessage={errorMessage}
         successMessage={successMessage}
         tasks={taskItems}
@@ -87,12 +87,6 @@ export default async function TimesPage({ searchParams }: TimesPageProps) {
       />
 
       <TimeEntriesList result={timeEntries} tasks={taskItems} />
-
-      <TaskPicker
-        query={taskQuery}
-        items={pickerTaskItems}
-        selectedTaskId={params.selectedTask}
-      />
     </section>
   );
 }

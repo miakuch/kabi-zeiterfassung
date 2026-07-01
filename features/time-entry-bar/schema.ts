@@ -108,6 +108,20 @@ function validateCommon(input: ManualTimeEntryInput) {
   };
 }
 
+function parseDurationToMinutes(duration: string) {
+  const match = /^(\d{1,2}):([0-5]\d)$/.exec(duration.trim());
+
+  if (!match) {
+    return null;
+  }
+
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  const totalMinutes = hours * 60 + minutes;
+
+  return totalMinutes >= 1 ? totalMinutes : null;
+}
+
 export function validateManualTimeEntry(
   input: ManualTimeEntryInput,
 ): ManualTimeEntryValidationResult {
@@ -151,10 +165,13 @@ export function validateManualTimeEntry(
     };
   }
 
-  const duration = Number(input.durationMinutes);
+  const durationInput = requiredText(input.durationMinutes);
+  const duration = durationInput ? parseDurationToMinutes(durationInput) : null;
 
-  if (!requiredText(input.durationMinutes)) {
+  if (!durationInput) {
     common.fieldErrors.durationMinutes = "required";
+  } else if (duration === null) {
+    common.fieldErrors.durationMinutes = "invalid-duration";
   }
 
   if (Object.keys(common.fieldErrors).length > 0) {
@@ -163,7 +180,7 @@ export function validateManualTimeEntry(
 
   const calculated = calculateTimeEntryFromStartAndDuration({
     startTime: common.startTime ?? "",
-    durationMinutes: duration,
+    durationMinutes: duration ?? 0,
   });
 
   if (!calculated.ok) {

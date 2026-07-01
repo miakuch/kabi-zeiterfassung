@@ -1,4 +1,4 @@
-import { AlertTriangle, Download, Eye } from "lucide-react";
+import { AlertTriangle, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   formatExportDate,
@@ -6,6 +6,7 @@ import {
   type ProjectMonthExportData,
 } from "@/features/exports/domain/export-data";
 import type { ReportFilterOptions } from "@/features/reports/filters/queries";
+import { ExportPreviewForm } from "./export-preview-form";
 import {
   formatExportMonthValue,
   formatExportMonthLabel,
@@ -23,10 +24,6 @@ type ExportPreviewPanelProps = {
   preview: ProjectMonthExportData | null;
   selection: ExportPreviewSelection;
 };
-
-function projectLabel(project: ReportFilterOptions["projects"][number]) {
-  return project.code ? `${project.code} - ${project.name}` : project.name;
-}
 
 function trimTime(value: string) {
   return value.slice(0, 5);
@@ -67,7 +64,10 @@ export function ExportPreviewPanel({
   const visibleEntries = preview?.entries.slice(0, 6) ?? [];
 
   return (
-    <section className="grid gap-4 rounded-md border bg-card p-4 sm:p-5">
+    <section
+      className="grid gap-4 rounded-md border bg-card p-4 sm:p-5"
+      id="zeitnachweis-export"
+    >
       <div>
         <div>
           <h2 className="text-lg font-semibold">Zeitnachweis-Export</h2>
@@ -77,47 +77,13 @@ export function ExportPreviewPanel({
         </div>
       </div>
 
-      <form className="grid gap-4 lg:grid-cols-[1fr_180px_auto]" method="get">
-        {preservedParams.map((param) => (
-          <input
-            key={`${param.name}:${param.value}`}
-            name={param.name}
-            type="hidden"
-            value={param.value}
-          />
-        ))}
-
-        <label className="grid gap-1 text-sm font-medium">
-          Projekt
-          <select
-            className="min-h-11 rounded-md border bg-background px-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/25"
-            defaultValue={selection.projectId}
-            name="exportProject"
-          >
-            <option value="">Projekt wählen</option>
-            {options.projects.map((project) => (
-              <option key={project.id} value={project.id}>
-                {projectLabel(project)}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="grid gap-1 text-sm font-medium">
-          Monat
-          <input
-            className="min-h-11 rounded-md border bg-background px-3 text-base outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/25"
-            defaultValue={selection.monthValue}
-            name="exportMonth"
-            type="month"
-          />
-        </label>
-
-        <Button className="self-end" type="submit">
-          <Eye className="size-4" aria-hidden="true" />
-          Vorschau
-        </Button>
-      </form>
+      <ExportPreviewForm
+        key={`${selection.projectId}:${selection.monthValue}`}
+        options={options}
+        preservedParams={preservedParams}
+        projectId={selection.projectId}
+        monthValue={selection.monthValue}
+      />
 
       {selection.monthIsInvalid ? (
         <div className="flex items-start gap-3 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">

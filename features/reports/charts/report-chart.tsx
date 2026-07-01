@@ -12,6 +12,7 @@ import {
   YAxis,
 } from "recharts";
 import { cn } from "@/lib/utils";
+import { NoScrollLink } from "@/features/reports/navigation/no-scroll-link";
 import type { ReportChartGrouping, ReportChartPoint } from "../summary/domain";
 
 type ReportChartProps = {
@@ -35,7 +36,7 @@ export function ReportChart({
         <h2 className="text-lg font-semibold">Diagramm</h2>
         <div className="flex flex-wrap gap-2">
           {groupings.map((grouping) => (
-            <a
+            <NoScrollLink
               className={cn(
                 "inline-flex min-h-9 items-center rounded-md border px-3 text-sm font-medium transition",
                 grouping.value === activeGrouping
@@ -46,7 +47,7 @@ export function ReportChart({
               key={grouping.value}
             >
               {grouping.label}
-            </a>
+            </NoScrollLink>
           ))}
         </div>
       </div>

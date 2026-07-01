@@ -2,6 +2,7 @@ import { renderToBuffer } from "@react-pdf/renderer";
 import { describe, expect, it } from "vitest";
 import type { ProjectMonthExportData } from "../domain/export-data";
 import {
+  buildProjectMonthPdfRows,
   buildProjectMonthPdfFileName,
   ProjectMonthPdfDocument,
 } from "./document";
@@ -48,6 +49,31 @@ describe("project month pdf document", () => {
     );
   });
 
+  it("groups pdf rows by day and employee", () => {
+    const rows = buildProjectMonthPdfRows([
+      exportData.entries[0],
+      {
+        ...exportData.entries[0],
+        id: "entry-2",
+        startTime: "11:00:00",
+        endTime: "11:30:00",
+        durationMinutes: 30,
+        durationDecimalHours: 0.5,
+        description: "Umsetzung prüfen",
+      },
+    ]);
+
+    expect(rows).toEqual([
+      {
+        key: "2026-06-13:Mia",
+        workDate: "2026-06-13",
+        description: "Konzept abstimmen; Umsetzung prüfen",
+        employeeName: "Mia",
+        durationDecimalHours: 2,
+      },
+    ]);
+  });
+
   it("renders to a pdf buffer without financial data", async () => {
     const buffer = await renderToBuffer(
       <ProjectMonthPdfDocument data={exportData} />,
@@ -63,4 +89,3 @@ describe("project month pdf document", () => {
     expect(rawPdf).not.toContain("amount");
   });
 });
-

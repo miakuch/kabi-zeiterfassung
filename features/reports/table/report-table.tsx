@@ -11,6 +11,7 @@ import {
 } from "@tanstack/react-table";
 import { ArrowDownUp } from "lucide-react";
 import type { EmployeeRole } from "@/lib/auth/require-session";
+import { NoScrollLink } from "@/features/reports/navigation/no-scroll-link";
 import { cn } from "@/lib/utils";
 import type { ReportEntry } from "../summary/domain";
 import {
@@ -144,7 +145,7 @@ export function ReportTable({
         </div>
 
         {role === "admin" ? (
-          <a
+          <NoScrollLink
             className={cn(
               "inline-flex min-h-10 items-center justify-center rounded-md border px-3 text-sm font-medium transition hover:bg-secondary",
               showAmounts && "border-primary bg-accent text-accent-foreground",
@@ -152,7 +153,7 @@ export function ReportTable({
             href={showAmounts ? hideAmountsHref : showAmountsHref}
           >
             {showAmounts ? "Beträge ausblenden" : "Beträge anzeigen"}
-          </a>
+          </NoScrollLink>
         ) : null}
       </div>
 

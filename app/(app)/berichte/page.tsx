@@ -158,6 +158,16 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
       </div>
 
       <ReportFilters
+        key={[
+          filters.quickFilter,
+          filters.startDate,
+          filters.endDate,
+          filters.customerId,
+          filters.projectId,
+          filters.taskId,
+          filters.employeeId,
+          filters.billable,
+        ].join(":")}
         filters={filters}
         options={options}
         role={employee.role}

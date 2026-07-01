@@ -10,7 +10,9 @@ import path from "node:path";
 import {
   formatExportDate,
   formatExportDecimalHours,
+  minutesToDecimalHours,
   type ProjectMonthExportData,
+  type ExportTimeEntry,
 } from "../domain/export-data";
 import { formatExportMonthValue } from "../preview/domain";
 
@@ -18,10 +20,6 @@ const brandColor = "#2498ac";
 const darkTextColor = "#162434";
 const borderColor = "#d8e2e8";
 const logoPath = path.join(process.cwd(), "public", "logo-kabi.png");
-
-function trimTime(value: string) {
-  return value.slice(0, 5);
-}
 
 function safeFilePart(value: string) {
   const normalized = value
@@ -38,6 +36,82 @@ export function buildProjectMonthPdfFileName(data: ProjectMonthExportData) {
   const month = formatExportMonthValue(data.month).replace("-", "_");
 
   return `${safeFilePart(data.project.customerName)}_KABI_Zeitnachweis_${month}.pdf`;
+}
+
+type ProjectMonthPdfRow = {
+  key: string;
+  workDate: string;
+  description: string;
+  employeeName: string;
+  durationDecimalHours: number;
+};
+
+export function buildProjectMonthPdfRows(
+  entries: ExportTimeEntry[],
+): ProjectMonthPdfRow[] {
+  const rows = new Map<
+    string,
+    {
+      workDate: string;
+      employeeName: string;
+      descriptions: string[];
+      durationMinutes: number;
+      firstStartTime: string;
+    }
+  >();
+
+  for (const entry of entries) {
+    const key = `${entry.workDate}:${entry.employeeName}`;
+    const row = rows.get(key);
+
+    if (row) {
+      row.descriptions.push(entry.description);
+      row.durationMinutes += entry.durationMinutes;
+      row.firstStartTime =
+        entry.startTime < row.firstStartTime ? entry.startTime : row.firstStartTime;
+      continue;
+    }
+
+    rows.set(key, {
+      workDate: entry.workDate,
+      employeeName: entry.employeeName,
+      descriptions: [entry.description],
+      durationMinutes: entry.durationMinutes,
+      firstStartTime: entry.startTime,
+    });
+  }
+
+  return [...rows.entries()]
+    .map(([key, row]) => ({
+      key,
+      workDate: row.workDate,
+      description: row.descriptions.join("; "),
+      employeeName: row.employeeName,
+      durationDecimalHours: minutesToDecimalHours(row.durationMinutes),
+      firstStartTime: row.firstStartTime,
+    }))
+    .sort((a, b) => {
+      const dateCompare = a.workDate.localeCompare(b.workDate);
+
+      if (dateCompare !== 0) {
+        return dateCompare;
+      }
+
+      const timeCompare = a.firstStartTime.localeCompare(b.firstStartTime);
+
+      if (timeCompare !== 0) {
+        return timeCompare;
+      }
+
+      return a.employeeName.localeCompare(b.employeeName, "de");
+    })
+    .map((row) => ({
+      key: row.key,
+      workDate: row.workDate,
+      description: row.description,
+      employeeName: row.employeeName,
+      durationDecimalHours: row.durationDecimalHours,
+    }));
 }
 
 const styles = StyleSheet.create({
@@ -121,11 +195,8 @@ const styles = StyleSheet.create({
   dateCell: {
     width: "13%",
   },
-  timeCell: {
-    width: "15%",
-  },
   descriptionCell: {
-    width: "42%",
+    width: "57%",
   },
   nameCell: {
     width: "20%",
@@ -170,9 +241,6 @@ function TableHeader() {
   return (
     <View fixed style={styles.tableHeader}>
       <Text style={[styles.cell, styles.dateCell, styles.headerText]}>Datum</Text>
-      <Text style={[styles.cell, styles.timeCell, styles.headerText]}>
-        Arbeitszeit
-      </Text>
       <Text style={[styles.cell, styles.descriptionCell, styles.headerText]}>
         Beschreibung
       </Text>
@@ -189,6 +257,8 @@ export function ProjectMonthPdfDocument({
 }: {
   data: ProjectMonthExportData;
 }) {
+  const rows = buildProjectMonthPdfRows(data.entries);
+
   return (
     <Document
       author="KABI Zeiterfassung"
@@ -230,23 +300,20 @@ export function ProjectMonthPdfDocument({
 
         <View style={styles.table}>
           <TableHeader />
-          {data.entries.length > 0 ? (
-            data.entries.map((entry) => (
-              <View key={entry.id} style={styles.tableRow} wrap={false}>
+          {rows.length > 0 ? (
+            rows.map((row) => (
+              <View key={row.key} style={styles.tableRow} wrap={false}>
                 <Text style={[styles.cell, styles.dateCell]}>
-                  {formatExportDate(entry.workDate)}
-                </Text>
-                <Text style={[styles.cell, styles.timeCell]}>
-                  {trimTime(entry.startTime)}-{trimTime(entry.endTime)}
+                  {formatExportDate(row.workDate)}
                 </Text>
                 <Text style={[styles.cell, styles.descriptionCell]}>
-                  {entry.description}
+                  {row.description}
                 </Text>
                 <Text style={[styles.cell, styles.nameCell]}>
-                  {entry.employeeName}
+                  {row.employeeName}
                 </Text>
                 <Text style={[styles.cell, styles.hoursCell]}>
-                  {formatExportDecimalHours(entry.durationDecimalHours)}
+                  {formatExportDecimalHours(row.durationDecimalHours)}
                 </Text>
               </View>
             ))

@@ -371,12 +371,16 @@ Kopf:
 - Monatsstunden
 - Logo oben rechts
 
-Tabelle:
+PDF-Tabelle:
 
 - Datum
-- Arbeitszeit
 - Beschreibung
 - Name
+- Stunden
+
+Im PDF werden mehrere Eintraege pro Tag und Mitarbeitendem zu einer Zeile
+zusammengefasst. Die Beschreibungen werden in Startzeit-Reihenfolge mit
+Semikolon getrennt aneinandergereiht. Die Arbeitszeit-Spalte entfaellt im PDF.
 
 Sortierung:
 
@@ -384,7 +388,7 @@ Sortierung:
 - dann Startzeit
 - dann Name
 
-Arbeitszeit und Monatsstunden werden als Dezimalstunden mit zwei Nachkommastellen angezeigt, z. B. `2,25` und `136,00`.
+Stunden und Monatsstunden werden als Dezimalstunden mit zwei Nachkommastellen angezeigt, z. B. `2,25` und `136,00`.
 
 Das PDF darf mehrseitig werden. Mehrseitige PDFs zeigen `Seite X von Y` und wiederholen den Tabellenkopf.
 

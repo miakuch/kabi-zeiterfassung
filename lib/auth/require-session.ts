@@ -1,6 +1,7 @@
 import "server-only";
 
 import { redirect } from "next/navigation";
+import { cache } from "react";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -13,7 +14,7 @@ export type CurrentEmployee = {
   role: EmployeeRole;
 };
 
-export async function requireEmployeeSession(): Promise<CurrentEmployee> {
+async function requireEmployeeSessionUncached(): Promise<CurrentEmployee> {
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -44,7 +45,9 @@ export async function requireEmployeeSession(): Promise<CurrentEmployee> {
   };
 }
 
-export async function requireAdminSession(): Promise<CurrentEmployee> {
+export const requireEmployeeSession = cache(requireEmployeeSessionUncached);
+
+export const requireAdminSession = cache(async (): Promise<CurrentEmployee> => {
   const employee = await requireEmployeeSession();
 
   if (employee.role !== "admin") {
@@ -52,4 +55,4 @@ export async function requireAdminSession(): Promise<CurrentEmployee> {
   }
 
   return employee;
-}
+});

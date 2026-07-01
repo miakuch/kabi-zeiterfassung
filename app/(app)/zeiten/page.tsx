@@ -22,11 +22,15 @@ type TimesPageProps = {
 };
 
 export default async function TimesPage({ searchParams }: TimesPageProps) {
-  const employee = await requireEmployeeSession();
+  const employeePromise = requireEmployeeSession();
+  const taskItemsPromise = getTaskPickerItems({ query: "", limit: 500 });
 
-  const params = await searchParams;
-  const [taskItems, preferences, timerDraft] = await Promise.all([
-    getTaskPickerItems({ query: "", limit: 500 }),
+  const [employee, params, taskItems] = await Promise.all([
+    employeePromise,
+    searchParams,
+    taskItemsPromise,
+  ]);
+  const [preferences, timerDraft] = await Promise.all([
     getTimeEntryPreferences(employee.id),
     getCurrentTimerDraft(employee.id),
   ]);

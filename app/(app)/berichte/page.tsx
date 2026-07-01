@@ -94,8 +94,10 @@ function ReportsLoadError() {
 }
 
 export default async function ReportsPage({ searchParams }: ReportsPageProps) {
-  const employee = await requireEmployeeSession();
-  const params = await searchParams;
+  const [employee, params] = await Promise.all([
+    requireEmployeeSession(),
+    searchParams,
+  ]);
   const filters = parseReportFilters(params);
   const grouping = parseReportChartGrouping(params.group, employee.role);
   const showAmounts = employee.role === "admin" && params.showAmounts === "1";

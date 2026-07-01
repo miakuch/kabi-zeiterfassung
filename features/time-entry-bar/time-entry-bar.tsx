@@ -121,9 +121,13 @@ function resolveInitialTaskId({
   return tasks.length === 1 ? tasks[0]?.id ?? "" : "";
 }
 
-function formatElapsedTime(startedAtUtc: string, stoppedAtUtc?: string | null) {
+function formatElapsedTime(
+  startedAtUtc: string,
+  stoppedAtUtc?: string | null,
+  nowMs = Date.now(),
+) {
   const startedAt = new Date(startedAtUtc).getTime();
-  const endedAt = stoppedAtUtc ? new Date(stoppedAtUtc).getTime() : Date.now();
+  const endedAt = stoppedAtUtc ? new Date(stoppedAtUtc).getTime() : nowMs;
 
   if (Number.isNaN(startedAt) || Number.isNaN(endedAt)) {
     return "00:00:00";
@@ -137,6 +141,25 @@ function formatElapsedTime(startedAtUtc: string, stoppedAtUtc?: string | null) {
   return [hours, minutes, seconds]
     .map((part) => String(part).padStart(2, "0"))
     .join(":");
+}
+
+function getBerlinDateTimeValues(date = new Date()) {
+  const parts = new Intl.DateTimeFormat("de-DE", {
+    day: "2-digit",
+    hour: "2-digit",
+    hour12: false,
+    minute: "2-digit",
+    month: "2-digit",
+    timeZone: "Europe/Berlin",
+    year: "numeric",
+  }).formatToParts(date);
+  const value = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((part) => part.type === type)?.value ?? "";
+
+  return {
+    workDate: `${value("year")}-${value("month")}-${value("day")}`,
+    time: `${value("hour")}:${value("minute")}`,
+  };
 }
 
 export function TimeEntryBar({
@@ -162,6 +185,10 @@ export function TimeEntryBar({
     useState<ManualEntryMode>(initialManualMode);
   const [isMoreOptionsOpen, setIsMoreOptionsOpen] = useState(false);
   const [targetEmployeeId, setTargetEmployeeId] = useState(selectedEmployeeId);
+  const [optimisticStartDraft, setOptimisticStartDraft] =
+    useState<CurrentTimerDraft | null>(null);
+  const [optimisticStopDraft, setOptimisticStopDraft] =
+    useState<CurrentTimerDraft | null>(null);
   const [description, setDescription] = useState(timerDraft?.description ?? "");
   const resolvedInitialTaskId = resolveInitialTaskId({
     initialTaskId,
@@ -174,29 +201,22 @@ export function TimeEntryBar({
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [durationMinutes, setDurationMinutes] = useState("");
-  const [timerWorkDate, setTimerWorkDate] = useState(
-    timerDraft?.correctionWorkDate ?? today,
-  );
-  const [timerStartTime, setTimerStartTime] = useState(
-    timerDraft?.correctionStartTime ?? "",
-  );
-  const [timerEndTime, setTimerEndTime] = useState(
-    timerDraft?.correctionEndTime ?? "",
-  );
   const workDateInputRef = useRef<HTMLInputElement>(null);
   const timerWorkDateInputRef = useRef<HTMLInputElement>(null);
   const [billable, setBillable] = useState(
     timerDraft?.billable ?? initialTask?.defaultBillable ?? true,
   );
-  const [elapsedTime, setElapsedTime] = useState(
-    timerDraft ? formatElapsedTime(timerDraft.startedAtUtc, timerDraft.stoppedAtUtc) : "00:00:00",
-  );
+  const [nowMs, setNowMs] = useState(() => Date.now());
   const [actionState, formAction, isSubmitting] = useActionState(
     createManualTimeEntry,
     initialManualEntryActionState,
   );
   const [startTimerState, startTimerAction, isStartingTimer] = useActionState(
     startTimerDraftAction,
+    initialTimerActionState,
+  );
+  const [stopTimerState, stopTimerAction, isStoppingTimer] = useActionState(
+    stopTimerDraftAction,
     initialTimerActionState,
   );
   const [saveTimerState, saveTimerAction, isSavingTimer] = useActionState(
@@ -206,10 +226,20 @@ export function TimeEntryBar({
   const [, startTransition] = useTransition();
   const manualState = actionState ?? initialManualEntryActionState;
   const timerStartState = startTimerState ?? initialTimerActionState;
+  const timerStopState = stopTimerState ?? initialTimerActionState;
   const timerSaveState = saveTimerState ?? initialTimerActionState;
   const manualFieldErrors = manualState.fieldErrors ?? {};
   const timerStartFieldErrors = timerStartState.fieldErrors ?? {};
+  const timerStopFieldErrors = timerStopState.fieldErrors ?? {};
   const timerSaveFieldErrors = timerSaveState.fieldErrors ?? {};
+  const currentTimerDraft =
+    timerStopState.draft ??
+    (timerStopState.formError ? null : optimisticStopDraft) ??
+    timerStartState.draft ??
+    (timerStartState.formError ? null : optimisticStartDraft) ??
+    timerDraft;
+  const localSuccessMessage =
+    timerStopState.successMessage ?? timerStartState.successMessage ?? null;
 
   const selectedTask = useMemo(() => getTaskById(tasks, taskId), [tasks, taskId]);
   const selectedEmployee = useMemo(
@@ -220,21 +250,28 @@ export function TimeEntryBar({
   );
   const canSelectEmployee = employeeOptions.length > 1;
   const hasBookableTasks = tasks.length > 0;
-  const hasTimerDraft = Boolean(timerDraft);
-  const isRunningTimer = timerDraft?.status === "running";
-  const isStoppedTimer = timerDraft?.status === "stopped";
+  const hasTimerDraft = Boolean(currentTimerDraft);
+  const isRunningTimer = currentTimerDraft?.status === "running";
+  const isStoppedTimer = currentTimerDraft?.status === "stopped";
+  const elapsedTime = currentTimerDraft
+    ? formatElapsedTime(
+        currentTimerDraft.startedAtUtc,
+        currentTimerDraft.stoppedAtUtc,
+        nowMs,
+      )
+    : "00:00:00";
 
   useEffect(() => {
-    if (!timerDraft || timerDraft.status !== "running") {
+    if (!currentTimerDraft || currentTimerDraft.status !== "running") {
       return;
     }
 
     const intervalId = window.setInterval(() => {
-      setElapsedTime(formatElapsedTime(timerDraft.startedAtUtc));
+      setNowMs(Date.now());
     }, 1000);
 
     return () => window.clearInterval(intervalId);
-  }, [timerDraft]);
+  }, [currentTimerDraft]);
 
   function persistPreferences(nextEntryMode: EntryMode, nextManualMode = manualMode) {
     startTransition(() => {
@@ -279,6 +316,55 @@ export function TimeEntryBar({
     nextSearchParams.delete("page");
     const queryString = nextSearchParams.toString();
     router.replace(queryString ? `${pathname}?${queryString}` : pathname);
+  }
+
+  function onStartTimerSubmit() {
+    const now = new Date();
+    const berlin = getBerlinDateTimeValues(now);
+
+    setOptimisticStopDraft(null);
+    setOptimisticStartDraft({
+      id: "optimistic-start",
+      resumedTimeEntryId: null,
+      taskId,
+      description: description.trim() || null,
+      billable,
+      startedAtUtc: now.toISOString(),
+      stoppedAtUtc: null,
+      status: "running",
+      correctionWorkDate: berlin.workDate,
+      correctionStartTime: berlin.time,
+      correctionEndTime: berlin.time,
+      elapsedMinutes: 0,
+      suspicions: [],
+    });
+  }
+
+  function onStopTimerSubmit() {
+    if (!currentTimerDraft) {
+      return;
+    }
+
+    const now = new Date();
+    const berlin = getBerlinDateTimeValues(now);
+
+    setOptimisticStopDraft({
+      ...currentTimerDraft,
+      description: description.trim() || null,
+      taskId,
+      billable,
+      stoppedAtUtc: now.toISOString(),
+      status: "stopped",
+      correctionEndTime: berlin.time,
+      elapsedMinutes: Math.max(
+        1,
+        Math.ceil(
+          (now.getTime() - new Date(currentTimerDraft.startedAtUtc).getTime()) /
+            60000,
+        ),
+      ),
+      suspicions: currentTimerDraft.suspicions,
+    });
   }
 
   function openDatePicker(input: HTMLInputElement | null) {
@@ -385,8 +471,8 @@ export function TimeEntryBar({
             <div className="flex min-h-11 items-center justify-center rounded-md border bg-background px-3 font-mono text-lg font-semibold">
               {elapsedTime}
             </div>
-            {!timerDraft ? (
-              <form action={startTimerAction}>
+            {!currentTimerDraft ? (
+              <form action={startTimerAction} onSubmit={onStartTimerSubmit}>
                 <input name="description" type="hidden" value={description} />
                 <input name="employeeId" type="hidden" value={targetEmployeeId} />
                 <input name="taskId" type="hidden" value={taskId} />
@@ -402,13 +488,19 @@ export function TimeEntryBar({
               </form>
             ) : null}
             {isRunningTimer ? (
-              <form action={stopTimerDraftAction}>
-                <input name="draftId" type="hidden" value={timerDraft.id} />
+              <form action={stopTimerAction} onSubmit={onStopTimerSubmit}>
+                <input name="draftId" type="hidden" value={currentTimerDraft.id} />
                 <input name="description" type="hidden" value={description} />
                 <input name="employeeId" type="hidden" value={targetEmployeeId} />
                 <input name="taskId" type="hidden" value={taskId} />
                 <input name="billable" type="hidden" value={billable ? "1" : "0"} />
-                <Button className="min-h-11 w-full" type="submit">
+                <Button
+                  className="min-h-11 w-full"
+                  disabled={
+                    isStoppingTimer || currentTimerDraft.id === "optimistic-start"
+                  }
+                  type="submit"
+                >
                   <Square className="size-4" aria-hidden="true" />
                   Stopp
                 </Button>
@@ -465,9 +557,9 @@ export function TimeEntryBar({
         </div>
       ) : null}
 
-      {entryMode === "timer" && isRunningTimer && timerDraft ? (
+      {entryMode === "timer" && isRunningTimer && currentTimerDraft ? (
         <form action={updateTimerDraftAction} className="flex justify-end">
-          <input name="draftId" type="hidden" value={timerDraft.id} />
+          <input name="draftId" type="hidden" value={currentTimerDraft.id} />
           <input name="description" type="hidden" value={description} />
           <input name="employeeId" type="hidden" value={targetEmployeeId} />
           <input name="taskId" type="hidden" value={taskId} />
@@ -593,9 +685,13 @@ export function TimeEntryBar({
         </form>
       ) : null}
 
-      {entryMode === "timer" && isStoppedTimer && timerDraft ? (
-        <form action={saveTimerAction} className="grid gap-3">
-          <input name="draftId" type="hidden" value={timerDraft.id} />
+      {entryMode === "timer" && isStoppedTimer && currentTimerDraft ? (
+        <form
+          action={saveTimerAction}
+          className="grid gap-3"
+          key={`${currentTimerDraft.id}:${currentTimerDraft.status}:${currentTimerDraft.stoppedAtUtc ?? "running"}`}
+        >
+          <input name="draftId" type="hidden" value={currentTimerDraft.id} />
           <input name="description" type="hidden" value={description} />
           <input name="employeeId" type="hidden" value={targetEmployeeId} />
           <input name="taskId" type="hidden" value={taskId} />
@@ -619,10 +715,9 @@ export function TimeEntryBar({
                     errorClass("workDate"),
                   )}
                   name="workDate"
-                  onChange={(event) => setTimerWorkDate(event.target.value)}
+                  defaultValue={currentTimerDraft.correctionWorkDate}
                   ref={timerWorkDateInputRef}
                   type="date"
-                  value={timerWorkDate}
                 />
               </span>
             </label>
@@ -635,9 +730,8 @@ export function TimeEntryBar({
                   errorClass("startTime"),
                 )}
                 name="startTime"
-                onChange={(event) => setTimerStartTime(event.target.value)}
+                defaultValue={currentTimerDraft.correctionStartTime}
                 type="time"
-                value={timerStartTime}
               />
             </label>
 
@@ -649,9 +743,8 @@ export function TimeEntryBar({
                   errorClass("endTime"),
                 )}
                 name="endTime"
-                onChange={(event) => setTimerEndTime(event.target.value)}
+                defaultValue={currentTimerDraft.correctionEndTime}
                 type="time"
-                value={timerEndTime}
               />
             </label>
 
@@ -675,9 +768,9 @@ export function TimeEntryBar({
         </form>
       ) : null}
 
-      {entryMode === "timer" && isStoppedTimer && timerDraft ? (
+      {entryMode === "timer" && isStoppedTimer && currentTimerDraft ? (
         <form action={discardTimerDraftAction} id="discard-timer-draft">
-          <input name="draftId" type="hidden" value={timerDraft.id} />
+          <input name="draftId" type="hidden" value={currentTimerDraft.id} />
           <input name="employeeId" type="hidden" value={targetEmployeeId} />
         </form>
       ) : null}
@@ -714,13 +807,22 @@ export function TimeEntryBar({
         </div>
       ) : null}
 
-      {timerStartState.formError || timerSaveState.formError || pageErrorMessage ? (
+      {timerStartState.formError ||
+      timerStopState.formError ||
+      timerSaveState.formError ||
+      pageErrorMessage ? (
         <div className="grid gap-1 rounded-md border border-destructive/30 bg-background px-3 py-2 text-sm text-destructive">
           {timerStartState.formError ? <p>{timerStartState.formError}</p> : null}
+          {timerStopState.formError ? <p>{timerStopState.formError}</p> : null}
           {timerSaveState.formError ? <p>{timerSaveState.formError}</p> : null}
           {pageErrorMessage ? <p>{pageErrorMessage}</p> : null}
           {Object.entries(timerStartFieldErrors).map(([field, error]) => (
             <p key={`start-${field}`}>
+              {fieldErrorMessage(field as keyof typeof fieldLabels, error)}
+            </p>
+          ))}
+          {Object.entries(timerStopFieldErrors).map(([field, error]) => (
+            <p key={`stop-${field}`}>
               {fieldErrorMessage(field as keyof typeof fieldLabels, error)}
             </p>
           ))}
@@ -732,15 +834,15 @@ export function TimeEntryBar({
         </div>
       ) : null}
 
-      {successMessage ? (
+      {localSuccessMessage || successMessage ? (
         <p className="rounded-md border border-primary/30 bg-accent px-3 py-2 text-sm text-accent-foreground">
-          {successMessage}
+          {localSuccessMessage ?? successMessage}
         </p>
       ) : null}
 
-      {entryMode === "timer" && timerDraft?.suspicions.length ? (
+      {entryMode === "timer" && currentTimerDraft?.suspicions.length ? (
         <p className="rounded-md border border-destructive/30 bg-background px-3 py-2 text-sm text-destructive">
-          {timerDraft.suspicions.includes("over-midnight")
+          {currentTimerDraft.suspicions.includes("over-midnight")
             ? "Timer läuft über Mitternacht. Bitte vor dem Speichern Datum, Start und Ende korrigieren."
             : "Timer läuft seit mindestens 10 Stunden. Bitte vor dem Speichern prüfen."}
         </p>

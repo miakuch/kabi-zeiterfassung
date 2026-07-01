@@ -25,7 +25,7 @@ export type CurrentTimerDraft = {
   suspicions: Array<"over-midnight" | "long-duration">;
 };
 
-type TimerDraftRow = {
+export type TimerDraftRow = {
   id: string;
   resumed_time_entry_id: string | null;
   task_id: string;
@@ -36,7 +36,7 @@ type TimerDraftRow = {
   status: TimerDraftStatus;
 };
 
-function toCurrentTimerDraft(row: TimerDraftRow): CurrentTimerDraft {
+export function toCurrentTimerDraft(row: TimerDraftRow): CurrentTimerDraft {
   const nowUtc = new Date().toISOString();
   const effectiveEndUtc = row.stopped_at_utc ?? nowUtc;
   const startValues = getBerlinDateTimeInputValues(row.started_at_utc);

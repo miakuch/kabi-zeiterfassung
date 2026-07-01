@@ -19,6 +19,7 @@ import {
 } from "@/features/time-entry-bar/schema";
 import { resolveTimeEntryTargetEmployee } from "@/features/time-entry-bar/target-employee";
 import { canBookTaskForEmployee } from "@/features/tasks/task-picker/bookable-task";
+import { toCurrentTimerDraft, type TimerDraftRow } from "./queries";
 import type { TimerActionState } from "./action-state";
 
 function trimmedOrNull(value: string) {
@@ -167,16 +168,20 @@ export async function startTimerDraftAction(
     };
   }
 
-  const { error } = await supabase.from("timer_drafts").insert({
-    employee_id: targetEmployee.employeeId,
-    task_id: taskId,
-    description: trimmedOrNull(formValue(formData, "description")),
-    billable: formData.get("billable") === "1",
-    started_at_utc: new Date().toISOString(),
-    status: "running",
-  });
+  const { data, error } = await supabase
+    .from("timer_drafts")
+    .insert({
+      employee_id: targetEmployee.employeeId,
+      task_id: taskId,
+      description: trimmedOrNull(formValue(formData, "description")),
+      billable: formData.get("billable") === "1",
+      started_at_utc: new Date().toISOString(),
+      status: "running",
+    })
+    .select("id, resumed_time_entry_id, task_id, description, billable, started_at_utc, stopped_at_utc, status")
+    .single();
 
-  if (error) {
+  if (error || !data) {
     return {
       formError: "Timer konnte nicht gestartet werden.",
       fieldErrors: {},
@@ -185,12 +190,12 @@ export async function startTimerDraftAction(
 
   await updateTimerPreferenceToTimer(employee.id);
 
-  revalidatePath("/zeiten");
-  redirect(timesPath(
-    { success: "timer-gestartet" },
-    targetEmployee.employeeId,
-    employee.id,
-  ));
+  return {
+    formError: null,
+    fieldErrors: {},
+    draft: toCurrentTimerDraft(data as TimerDraftRow),
+    successMessage: "Timer wurde gestartet.",
+  };
 }
 
 export async function updateTimerDraftAction(formData: FormData) {
@@ -246,7 +251,10 @@ export async function updateTimerDraftAction(formData: FormData) {
   ));
 }
 
-export async function stopTimerDraftAction(formData: FormData) {
+export async function stopTimerDraftAction(
+  _previousState: TimerActionState,
+  formData: FormData,
+): Promise<TimerActionState> {
   const employee = await requireEmployeeSession();
   const targetEmployee = await resolveTimeEntryTargetEmployee({
     currentEmployee: employee,
@@ -256,15 +264,17 @@ export async function stopTimerDraftAction(formData: FormData) {
   const taskId = formValue(formData, "taskId");
 
   if (!targetEmployee.ok) {
-    redirect(timesPath({ error: "timer-ungueltig" }));
+    return {
+      formError: targetEmployee.formError,
+      fieldErrors: {},
+    };
   }
 
   if (!draftId || !taskId) {
-    redirect(timesPath(
-      { error: "timer-ungueltig" },
-      targetEmployee.employeeId,
-      employee.id,
-    ));
+    return {
+      formError: "Timer-Entwurf ist ungültig.",
+      fieldErrors: {},
+    };
   }
 
   const canBookTask = await canBookTaskForEmployee({
@@ -273,25 +283,23 @@ export async function stopTimerDraftAction(formData: FormData) {
   });
 
   if (!canBookTask) {
-    redirect(timesPath(
-      { error: "timer-aufgabe" },
-      targetEmployee.employeeId,
-      employee.id,
-    ));
+    return {
+      formError: "Diese Aufgabe ist für diese:n Mitarbeitende:n nicht freigegeben.",
+      fieldErrors: { taskId: "not-bookable" },
+    };
   }
 
   const draft = await getOwnedTimerDraft(draftId, targetEmployee.employeeId);
 
   if (!draft || draft.status !== "running") {
-    redirect(timesPath(
-      { error: "timer-stoppen" },
-      targetEmployee.employeeId,
-      employee.id,
-    ));
+    return {
+      formError: "Timer konnte nicht gestoppt werden.",
+      fieldErrors: {},
+    };
   }
 
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("timer_drafts")
     .update({
       task_id: taskId,
@@ -301,14 +309,23 @@ export async function stopTimerDraftAction(formData: FormData) {
       status: "stopped",
     })
     .eq("id", draftId)
-    .eq("employee_id", targetEmployee.employeeId);
+    .eq("employee_id", targetEmployee.employeeId)
+    .select("id, resumed_time_entry_id, task_id, description, billable, started_at_utc, stopped_at_utc, status")
+    .single();
 
-  revalidatePath("/zeiten");
-  redirect(timesPath(
-    error ? { error: "timer-stoppen" } : { success: "timer-gestoppt" },
-    targetEmployee.employeeId,
-    employee.id,
-  ));
+  if (error || !data) {
+    return {
+      formError: "Timer konnte nicht gestoppt werden.",
+      fieldErrors: {},
+    };
+  }
+
+  return {
+    formError: null,
+    fieldErrors: {},
+    draft: toCurrentTimerDraft(data as TimerDraftRow),
+    successMessage: "Timer wurde gestoppt.",
+  };
 }
 
 export async function discardTimerDraftAction(formData: FormData) {

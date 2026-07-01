@@ -133,11 +133,17 @@ function amountForEntry({
 
 function applyNestedFilters(entries: ReportEntry[], filters: ReportFilterState) {
   return entries.filter((entry) => {
-    if (filters.customerId && entry.customerId !== filters.customerId) {
+    if (
+      filters.customerIds.length > 0 &&
+      !filters.customerIds.includes(entry.customerId)
+    ) {
       return false;
     }
 
-    if (filters.projectId && entry.projectId !== filters.projectId) {
+    if (
+      filters.projectIds.length > 0 &&
+      !filters.projectIds.includes(entry.projectId)
+    ) {
       return false;
     }
 
@@ -265,22 +271,22 @@ export async function getReportOverview({
   const supabase = await createSupabaseServerClient();
   let taskIds: string[] | null = null;
 
-  if (filters.taskId) {
-    taskIds = [filters.taskId];
-  } else if (filters.projectId || filters.customerId) {
+  if (filters.taskIds.length > 0) {
+    taskIds = filters.taskIds;
+  } else if (filters.projectIds.length > 0 || filters.customerIds.length > 0) {
     let taskFilterQuery = supabase
       .from("tasks")
       .select("id, project_id, projects!inner(customer_id)")
       .limit(10000);
 
-    if (filters.projectId) {
-      taskFilterQuery = taskFilterQuery.eq("project_id", filters.projectId);
+    if (filters.projectIds.length > 0) {
+      taskFilterQuery = taskFilterQuery.in("project_id", filters.projectIds);
     }
 
-    if (filters.customerId) {
-      taskFilterQuery = taskFilterQuery.eq(
+    if (filters.customerIds.length > 0) {
+      taskFilterQuery = taskFilterQuery.in(
         "projects.customer_id",
-        filters.customerId,
+        filters.customerIds,
       );
     }
 
@@ -311,8 +317,8 @@ export async function getReportOverview({
 
   if (employee.role !== "admin") {
     query = query.eq("employee_id", employee.id);
-  } else if (filters.employeeId) {
-    query = query.eq("employee_id", filters.employeeId);
+  } else if (filters.employeeIds.length > 0) {
+    query = query.in("employee_id", filters.employeeIds);
   }
 
   if (taskIds !== null) {

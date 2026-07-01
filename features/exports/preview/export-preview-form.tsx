@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useTransition, type FormEvent } from "react";
-import { Eye } from "lucide-react";
+import { Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 type PreservedParam = {
@@ -35,7 +35,7 @@ function previewUrl(form: HTMLFormElement) {
 
   for (const [name, value] of formData.entries()) {
     if (typeof value === "string" && value) {
-      params.set(name, value);
+      params.append(name, value);
     }
   }
 
@@ -105,8 +105,8 @@ export function ExportPreviewForm({
       </label>
 
       <Button className="self-end" disabled={isPending} type="submit">
-        <Eye className="size-4" aria-hidden="true" />
-        Vorschau
+        <Filter className="size-4" aria-hidden="true" />
+        Anwenden
       </Button>
     </form>
   );

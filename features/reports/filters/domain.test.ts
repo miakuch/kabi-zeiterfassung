@@ -43,10 +43,26 @@ describe("report filter parsing", () => {
     expect(parseReportFilters({ quick: "unknown", billable: "x" })).toMatchObject({
       quickFilter: "current-month",
       billable: "all",
-      customerId: "",
-      projectId: "",
-      taskId: "",
-      employeeId: "",
+      customerIds: [],
+      projectIds: [],
+      taskIds: [],
+      employeeIds: [],
+    });
+  });
+
+  it("parses repeated hierarchy filters", () => {
+    expect(
+      parseReportFilters({
+        customer: ["c1", "c2", "c1"],
+        project: ["p1", "p2"],
+        task: "t1",
+        employee: ["e1", "e2"],
+      }),
+    ).toMatchObject({
+      customerIds: ["c1", "c2"],
+      projectIds: ["p1", "p2"],
+      taskIds: ["t1"],
+      employeeIds: ["e1", "e2"],
     });
   });
 });

@@ -13,6 +13,22 @@ import {
   type ManualEntryMode,
 } from "./schema";
 import type { ManualEntryActionState } from "./action-state";
+import { resolveTimeEntryTargetEmployee } from "./target-employee";
+import { canBookTaskForEmployee } from "@/features/tasks/task-picker/bookable-task";
+
+function timesPath(
+  params: Record<string, string>,
+  targetEmployeeId?: string,
+  currentEmployeeId?: string,
+) {
+  const searchParams = new URLSearchParams(params);
+
+  if (targetEmployeeId && targetEmployeeId !== currentEmployeeId) {
+    searchParams.set("employee", targetEmployeeId);
+  }
+
+  return `/zeiten?${searchParams.toString()}`;
+}
 
 export async function updateTimeEntryPreferences(input: {
   entryMode: EntryMode;
@@ -41,6 +57,10 @@ export async function createManualTimeEntry(
   formData: FormData,
 ): Promise<ManualEntryActionState> {
   const employee = await requireEmployeeSession();
+  const targetEmployee = await resolveTimeEntryTargetEmployee({
+    currentEmployee: employee,
+    requestedEmployeeId: formValue(formData, "employeeId"),
+  });
   const manualMode =
     formValue(formData, "manualMode") === "duration" ? "duration" : "end";
   const parsed = validateManualTimeEntry({
@@ -54,6 +74,13 @@ export async function createManualTimeEntry(
     manualMode,
   });
 
+  if (!targetEmployee.ok) {
+    return {
+      formError: targetEmployee.formError,
+      fieldErrors: {},
+    };
+  }
+
   if (!parsed.ok) {
     return {
       formError: "Bitte prüfe die markierten Felder.",
@@ -61,11 +88,23 @@ export async function createManualTimeEntry(
     };
   }
 
+  const canBookTask = await canBookTaskForEmployee({
+    employeeId: targetEmployee.employeeId,
+    taskId: parsed.value.taskId,
+  });
+
+  if (!canBookTask) {
+    return {
+      formError: "Diese Aufgabe ist für diese:n Mitarbeitende:n nicht freigegeben.",
+      fieldErrors: { taskId: "not-bookable" },
+    };
+  }
+
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from("time_entries")
     .insert({
-      employee_id: employee.id,
+      employee_id: targetEmployee.employeeId,
       task_id: parsed.value.taskId,
       description: parsed.value.description,
       work_date: parsed.value.workDate,
@@ -109,5 +148,9 @@ export async function createManualTimeEntry(
   });
 
   revalidatePath("/zeiten");
-  redirect("/zeiten?success=zeit-gespeichert");
+  redirect(timesPath(
+    { success: "zeit-gespeichert" },
+    targetEmployee.employeeId,
+    employee.id,
+  ));
 }

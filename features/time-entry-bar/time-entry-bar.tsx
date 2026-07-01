@@ -8,10 +8,13 @@ import {
   useState,
   useTransition,
 } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   CalendarDays,
+  ChevronDown,
   Clock,
   Save,
+  SlidersHorizontal,
   Square,
   Trash2,
   Euro,
@@ -36,10 +39,14 @@ import {
   updateTimeEntryPreferences,
 } from "./actions";
 import { initialManualEntryActionState } from "./action-state";
+import type { TimeEntryEmployeeOption } from "./employee-selection";
 import type { EntryMode, ManualEntryMode } from "./schema";
 
 type TimeEntryBarProps = {
   tasks: TaskPickerItem[];
+  currentEmployeeId: string;
+  employeeOptions: TimeEntryEmployeeOption[];
+  selectedEmployeeId: string;
   initialTaskId?: string;
   initialEntryMode: EntryMode;
   initialManualMode: ManualEntryMode;
@@ -81,6 +88,10 @@ function fieldErrorMessage(field: keyof typeof fieldLabels, error?: string) {
 
   if (error === "invalid-date") {
     return "Datum ist ungültig.";
+  }
+
+  if (error === "not-bookable") {
+    return "Aufgabe ist für diese:n Mitarbeitende:n nicht freigegeben.";
   }
 
   return `${fieldLabels[field]} ist erforderlich.`;
@@ -130,6 +141,9 @@ function formatElapsedTime(startedAtUtc: string, stoppedAtUtc?: string | null) {
 
 export function TimeEntryBar({
   tasks,
+  currentEmployeeId,
+  employeeOptions,
+  selectedEmployeeId,
   initialTaskId,
   initialEntryMode,
   initialManualMode,
@@ -138,11 +152,16 @@ export function TimeEntryBar({
   pageErrorMessage,
   successMessage,
 }: TimeEntryBarProps) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [entryMode, setEntryMode] = useState<EntryMode>(
     timerDraft ? "timer" : initialEntryMode,
   );
   const [manualMode, setManualMode] =
     useState<ManualEntryMode>(initialManualMode);
+  const [isMoreOptionsOpen, setIsMoreOptionsOpen] = useState(false);
+  const [targetEmployeeId, setTargetEmployeeId] = useState(selectedEmployeeId);
   const [description, setDescription] = useState(timerDraft?.description ?? "");
   const resolvedInitialTaskId = resolveInitialTaskId({
     initialTaskId,
@@ -193,6 +212,13 @@ export function TimeEntryBar({
   const timerSaveFieldErrors = timerSaveState.fieldErrors ?? {};
 
   const selectedTask = useMemo(() => getTaskById(tasks, taskId), [tasks, taskId]);
+  const selectedEmployee = useMemo(
+    () =>
+      employeeOptions.find((employee) => employee.id === targetEmployeeId) ??
+      null,
+    [employeeOptions, targetEmployeeId],
+  );
+  const canSelectEmployee = employeeOptions.length > 1;
   const hasBookableTasks = tasks.length > 0;
   const hasTimerDraft = Boolean(timerDraft);
   const isRunningTimer = timerDraft?.status === "running";
@@ -237,6 +263,22 @@ export function TimeEntryBar({
     const nextTask = getTaskById(tasks, nextTaskId);
     setTaskId(nextTaskId);
     setBillable(nextTask?.defaultBillable ?? true);
+  }
+
+  function onTargetEmployeeChange(nextEmployeeId: string) {
+    setTargetEmployeeId(nextEmployeeId);
+
+    const nextSearchParams = new URLSearchParams(searchParams.toString());
+
+    if (nextEmployeeId && nextEmployeeId !== currentEmployeeId) {
+      nextSearchParams.set("employee", nextEmployeeId);
+    } else {
+      nextSearchParams.delete("employee");
+    }
+
+    nextSearchParams.delete("page");
+    const queryString = nextSearchParams.toString();
+    router.replace(queryString ? `${pathname}?${queryString}` : pathname);
   }
 
   function openDatePicker(input: HTMLInputElement | null) {
@@ -346,6 +388,7 @@ export function TimeEntryBar({
             {!timerDraft ? (
               <form action={startTimerAction}>
                 <input name="description" type="hidden" value={description} />
+                <input name="employeeId" type="hidden" value={targetEmployeeId} />
                 <input name="taskId" type="hidden" value={taskId} />
                 <input name="billable" type="hidden" value={billable ? "1" : "0"} />
                 <Button
@@ -362,6 +405,7 @@ export function TimeEntryBar({
               <form action={stopTimerDraftAction}>
                 <input name="draftId" type="hidden" value={timerDraft.id} />
                 <input name="description" type="hidden" value={description} />
+                <input name="employeeId" type="hidden" value={targetEmployeeId} />
                 <input name="taskId" type="hidden" value={taskId} />
                 <input name="billable" type="hidden" value={billable ? "1" : "0"} />
                 <Button className="min-h-11 w-full" type="submit">
@@ -374,10 +418,58 @@ export function TimeEntryBar({
         ) : null}
       </div>
 
+      {canSelectEmployee ? (
+        <div className="grid gap-2">
+          <Button
+            aria-expanded={isMoreOptionsOpen}
+            className="min-h-8 w-fit px-2 text-xs text-muted-foreground hover:text-foreground"
+            onClick={() => setIsMoreOptionsOpen((current) => !current)}
+            type="button"
+            variant="ghost"
+          >
+            <span className="flex min-w-0 items-center gap-2">
+              <SlidersHorizontal className="size-3.5 shrink-0" aria-hidden="true" />
+              <span>Mehr Optionen</span>
+              {selectedEmployee ? (
+                <span className="max-w-44 truncate text-muted-foreground">
+                  {selectedEmployee.name}
+                </span>
+              ) : null}
+            </span>
+            <ChevronDown
+              className={cn(
+                "size-3.5 shrink-0 text-muted-foreground transition-transform",
+                isMoreOptionsOpen ? "rotate-180" : "",
+              )}
+              aria-hidden="true"
+            />
+          </Button>
+
+          {isMoreOptionsOpen ? (
+            <label className="grid gap-1 text-sm font-medium md:max-w-sm">
+              Mitarbeitende
+              <select
+                className="min-h-11 rounded-md border bg-card px-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/25"
+                name="employeeSelection"
+                onChange={(event) => onTargetEmployeeChange(event.target.value)}
+                value={targetEmployeeId}
+              >
+                {employeeOptions.map((employee) => (
+                  <option key={employee.id} value={employee.id}>
+                    {employee.name} ({employee.email})
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+        </div>
+      ) : null}
+
       {entryMode === "timer" && isRunningTimer && timerDraft ? (
         <form action={updateTimerDraftAction} className="flex justify-end">
           <input name="draftId" type="hidden" value={timerDraft.id} />
           <input name="description" type="hidden" value={description} />
+          <input name="employeeId" type="hidden" value={targetEmployeeId} />
           <input name="taskId" type="hidden" value={taskId} />
           <input name="billable" type="hidden" value={billable ? "1" : "0"} />
           <Button type="submit" variant="outline">
@@ -390,6 +482,7 @@ export function TimeEntryBar({
       {entryMode === "manual" ? (
         <form action={formAction} className="grid gap-3">
           <input name="description" type="hidden" value={description} />
+          <input name="employeeId" type="hidden" value={targetEmployeeId} />
           <input name="taskId" type="hidden" value={taskId} />
           <input name="billable" type="hidden" value={billable ? "1" : "0"} />
           <input name="manualMode" type="hidden" value={manualMode} />
@@ -504,6 +597,7 @@ export function TimeEntryBar({
         <form action={saveTimerAction} className="grid gap-3">
           <input name="draftId" type="hidden" value={timerDraft.id} />
           <input name="description" type="hidden" value={description} />
+          <input name="employeeId" type="hidden" value={targetEmployeeId} />
           <input name="taskId" type="hidden" value={taskId} />
           <input name="billable" type="hidden" value={billable ? "1" : "0"} />
 
@@ -584,6 +678,7 @@ export function TimeEntryBar({
       {entryMode === "timer" && isStoppedTimer && timerDraft ? (
         <form action={discardTimerDraftAction} id="discard-timer-draft">
           <input name="draftId" type="hidden" value={timerDraft.id} />
+          <input name="employeeId" type="hidden" value={targetEmployeeId} />
         </form>
       ) : null}
 

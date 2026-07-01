@@ -37,7 +37,11 @@ type TaskPickerRow = {
   id: string;
   name: string;
   default_billable: boolean;
+  assignment_mode: "all" | "selected";
   status: "active" | "inactive";
+  task_assignments: Array<{
+    employee_id: string;
+  }> | null;
   projects: RelatedProject | RelatedProject[] | null;
 };
 
@@ -45,7 +49,20 @@ function firstRelated<T>(value: T | T[] | null) {
   return Array.isArray(value) ? (value[0] ?? null) : value;
 }
 
-function toTaskPickerItem(row: TaskPickerRow): TaskPickerItem | null {
+function isAssignedToEmployee(row: TaskPickerRow, employeeId?: string) {
+  if (!employeeId || row.assignment_mode === "all") {
+    return true;
+  }
+
+  return (row.task_assignments ?? []).some(
+    (assignment) => assignment.employee_id === employeeId,
+  );
+}
+
+function toTaskPickerItem(
+  row: TaskPickerRow,
+  employeeId?: string,
+): TaskPickerItem | null {
   const project = firstRelated(row.projects);
   const customer = firstRelated(project?.customers ?? null);
 
@@ -54,7 +71,8 @@ function toTaskPickerItem(row: TaskPickerRow): TaskPickerItem | null {
     !project ||
     !customer ||
     project.status !== "active" ||
-    customer.status !== "active"
+    customer.status !== "active" ||
+    !isAssignedToEmployee(row, employeeId)
   ) {
     return null;
   }
@@ -79,9 +97,11 @@ function toTaskPickerItem(row: TaskPickerRow): TaskPickerItem | null {
 }
 
 export async function getTaskPickerItems({
+  employeeId,
   query,
   limit = 20,
 }: {
+  employeeId?: string;
   query: string;
   limit?: number;
 }): Promise<TaskPickerItem[]> {
@@ -91,7 +111,7 @@ export async function getTaskPickerItems({
   const { data, error } = await supabase
     .from("tasks")
     .select(
-      "id, name, default_billable, status, projects(id, name, code, color, status, customers(id, name, status))",
+      "id, name, default_billable, assignment_mode, status, task_assignments(employee_id), projects(id, name, code, color, status, customers(id, name, status))",
     )
     .eq("status", "active")
     .limit(200);
@@ -102,7 +122,7 @@ export async function getTaskPickerItems({
 
   return ((data ?? []) as unknown as TaskPickerRow[])
     .flatMap((row) => {
-      const item = toTaskPickerItem(row);
+      const item = toTaskPickerItem(row, employeeId);
 
       return item ? [item] : [];
     })

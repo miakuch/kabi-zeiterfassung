@@ -42,6 +42,7 @@ export type ManualTimeEntryFieldError =
 export type ManualTimeEntryValidationError =
   | "required"
   | "invalid-date"
+  | "not-bookable"
   | TimeCalculationError;
 
 export type ManualTimeEntryValidationResult =

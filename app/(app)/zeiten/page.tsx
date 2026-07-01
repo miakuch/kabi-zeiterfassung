@@ -11,10 +11,13 @@ import {
   getTodayInBerlin,
 } from "@/features/time-entry-bar/queries";
 import { getTaskPickerItems } from "@/features/tasks/task-picker/queries";
+import { getActiveEmployeeOptions } from "@/features/employees/queries";
+import { resolveSelectedTimeEntryEmployeeId } from "@/features/time-entry-bar/employee-selection";
 
 type TimesPageProps = {
   searchParams: Promise<{
     error?: string;
+    employee?: string;
     page?: string;
     selectedTask?: string;
     success?: string;
@@ -23,16 +26,27 @@ type TimesPageProps = {
 
 export default async function TimesPage({ searchParams }: TimesPageProps) {
   const employeePromise = requireEmployeeSession();
-  const taskItemsPromise = getTaskPickerItems({ query: "", limit: 500 });
 
-  const [employee, params, taskItems] = await Promise.all([
+  const [employee, params] = await Promise.all([
     employeePromise,
     searchParams,
-    taskItemsPromise,
   ]);
-  const [preferences, timerDraft] = await Promise.all([
+  const employeeOptions =
+    employee.role === "admin" ? await getActiveEmployeeOptions() : [];
+  const selectedEmployeeId = resolveSelectedTimeEntryEmployeeId({
+    currentEmployeeId: employee.id,
+    employeeOptions,
+    isAdmin: employee.role === "admin",
+    requestedEmployeeId: params.employee,
+  });
+  const [preferences, timerDraft, taskItems] = await Promise.all([
     getTimeEntryPreferences(employee.id),
-    getCurrentTimerDraft(employee.id),
+    getCurrentTimerDraft(selectedEmployeeId),
+    getTaskPickerItems({
+      employeeId: selectedEmployeeId,
+      query: "",
+      limit: 500,
+    }),
   ]);
   const timeEntries = await getOwnTimeEntryList({
     employeeId: employee.id,
@@ -57,6 +71,7 @@ export default async function TimesPage({ searchParams }: TimesPageProps) {
     "timer-verwerfen": "Timer konnte nicht verworfen werden.",
     "timer-besteht": "Es gibt bereits einen Timer-Entwurf.",
     "timer-starten": "Timer konnte nicht gestartet werden.",
+    "timer-aufgabe": "Diese Aufgabe ist für diese:n Mitarbeitende:n nicht freigegeben.",
     "zeit-loeschen": "Eintrag konnte nicht gelöscht werden.",
     "zeit-speichern": "Eintrag konnte nicht gespeichert werden.",
     "zeit-ungueltig": "Eintrag ist ungültig.",
@@ -66,8 +81,8 @@ export default async function TimesPage({ searchParams }: TimesPageProps) {
     : undefined;
   const errorMessage = params.error ? errorMessages[params.error] : undefined;
   const timerDraftKey = timerDraft
-    ? `${timerDraft.id}:${timerDraft.status}:${timerDraft.stoppedAtUtc ?? "running"}`
-    : "no-timer";
+    ? `${selectedEmployeeId}:${timerDraft.id}:${timerDraft.status}:${timerDraft.stoppedAtUtc ?? "running"}`
+    : `${selectedEmployeeId}:no-timer`;
 
   return (
     <section className="grid gap-6">
@@ -79,11 +94,14 @@ export default async function TimesPage({ searchParams }: TimesPageProps) {
       </div>
 
       <TimeEntryBar
+        currentEmployeeId={employee.id}
+        employeeOptions={employeeOptions}
         initialTaskId={params.selectedTask}
         initialEntryMode={preferences.lastEntryMode}
         initialManualMode={preferences.lastManualMode}
         key={timerDraftKey}
         pageErrorMessage={errorMessage}
+        selectedEmployeeId={selectedEmployeeId}
         successMessage={successMessage}
         tasks={taskItems}
         today={getTodayInBerlin()}

@@ -12,10 +12,10 @@ export type ReportFilterState = {
   quickFilter: ReportQuickFilter;
   startDate: string;
   endDate: string;
-  customerId: string;
-  projectId: string;
-  taskId: string;
-  employeeId: string;
+  customerIds: string[];
+  projectIds: string[];
+  taskIds: string[];
+  employeeIds: string[];
   billable: ReportBillableFilter;
 };
 
@@ -151,35 +151,47 @@ export function resolveReportDateRange({
 }
 
 export function parseReportFilters(params: {
-  quick?: string;
-  start?: string;
-  end?: string;
-  customer?: string;
-  project?: string;
-  task?: string;
-  employee?: string;
-  billable?: string;
+  quick?: string | string[];
+  start?: string | string[];
+  end?: string | string[];
+  customer?: string | string[];
+  project?: string | string[];
+  task?: string | string[];
+  employee?: string | string[];
+  billable?: string | string[];
 }): ReportFilterState {
-  const quickFilter = quickFilterValues.has(params.quick as ReportQuickFilter)
-    ? (params.quick as ReportQuickFilter)
+  const quick = firstParamValue(params.quick);
+  const billableParam = firstParamValue(params.billable);
+  const quickFilter = quickFilterValues.has(quick as ReportQuickFilter)
+    ? (quick as ReportQuickFilter)
     : "current-month";
   const range = resolveReportDateRange({
     quickFilter,
-    customStartDate: params.start,
-    customEndDate: params.end,
+    customStartDate: firstParamValue(params.start),
+    customEndDate: firstParamValue(params.end),
   });
-  const billable = billableValues.has(params.billable as ReportBillableFilter)
-    ? (params.billable as ReportBillableFilter)
+  const billable = billableValues.has(billableParam as ReportBillableFilter)
+    ? (billableParam as ReportBillableFilter)
     : "all";
 
   return {
     quickFilter,
     startDate: range.startDate,
     endDate: range.endDate,
-    customerId: params.customer ?? "",
-    projectId: params.project ?? "",
-    taskId: params.task ?? "",
-    employeeId: params.employee ?? "",
+    customerIds: parseMultiValueParam(params.customer),
+    projectIds: parseMultiValueParam(params.project),
+    taskIds: parseMultiValueParam(params.task),
+    employeeIds: parseMultiValueParam(params.employee),
     billable,
   };
+}
+
+function firstParamValue(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function parseMultiValueParam(value: string | string[] | undefined) {
+  const values = Array.isArray(value) ? value : value ? [value] : [];
+
+  return [...new Set(values.map((item) => item.trim()).filter(Boolean))];
 }

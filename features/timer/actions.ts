@@ -17,6 +17,8 @@ import {
   formValue,
   validateManualTimeEntry,
 } from "@/features/time-entry-bar/schema";
+import { resolveTimeEntryTargetEmployee } from "@/features/time-entry-bar/target-employee";
+import { canBookTaskForEmployee } from "@/features/tasks/task-picker/bookable-task";
 import type { TimerActionState } from "./action-state";
 
 function trimmedOrNull(value: string) {
@@ -25,8 +27,16 @@ function trimmedOrNull(value: string) {
   return trimmed ? trimmed : null;
 }
 
-function timesPath(params: Record<string, string>) {
+function timesPath(
+  params: Record<string, string>,
+  targetEmployeeId?: string,
+  currentEmployeeId?: string,
+) {
   const searchParams = new URLSearchParams(params);
+
+  if (targetEmployeeId && targetEmployeeId !== currentEmployeeId) {
+    searchParams.set("employee", targetEmployeeId);
+  }
 
   return `/zeiten?${searchParams.toString()}`;
 }
@@ -104,7 +114,18 @@ export async function startTimerDraftAction(
   formData: FormData,
 ): Promise<TimerActionState> {
   const employee = await requireEmployeeSession();
+  const targetEmployee = await resolveTimeEntryTargetEmployee({
+    currentEmployee: employee,
+    requestedEmployeeId: formValue(formData, "employeeId"),
+  });
   const taskId = formValue(formData, "taskId");
+
+  if (!targetEmployee.ok) {
+    return {
+      formError: targetEmployee.formError,
+      fieldErrors: {},
+    };
+  }
 
   if (!taskId) {
     return {
@@ -113,11 +134,23 @@ export async function startTimerDraftAction(
     };
   }
 
+  const canBookTask = await canBookTaskForEmployee({
+    employeeId: targetEmployee.employeeId,
+    taskId,
+  });
+
+  if (!canBookTask) {
+    return {
+      formError: "Diese Aufgabe ist für diese:n Mitarbeitende:n nicht freigegeben.",
+      fieldErrors: { taskId: "not-bookable" },
+    };
+  }
+
   const supabase = await createSupabaseServerClient();
   const { data: existingDraft, error: existingError } = await supabase
     .from("timer_drafts")
     .select("id")
-    .eq("employee_id", employee.id)
+    .eq("employee_id", targetEmployee.employeeId)
     .maybeSingle();
 
   if (existingError) {
@@ -135,7 +168,7 @@ export async function startTimerDraftAction(
   }
 
   const { error } = await supabase.from("timer_drafts").insert({
-    employee_id: employee.id,
+    employee_id: targetEmployee.employeeId,
     task_id: taskId,
     description: trimmedOrNull(formValue(formData, "description")),
     billable: formData.get("billable") === "1",
@@ -153,16 +186,45 @@ export async function startTimerDraftAction(
   await updateTimerPreferenceToTimer(employee.id);
 
   revalidatePath("/zeiten");
-  redirect(timesPath({ success: "timer-gestartet" }));
+  redirect(timesPath(
+    { success: "timer-gestartet" },
+    targetEmployee.employeeId,
+    employee.id,
+  ));
 }
 
 export async function updateTimerDraftAction(formData: FormData) {
   const employee = await requireEmployeeSession();
+  const targetEmployee = await resolveTimeEntryTargetEmployee({
+    currentEmployee: employee,
+    requestedEmployeeId: formValue(formData, "employeeId"),
+  });
   const draftId = formValue(formData, "draftId");
   const taskId = formValue(formData, "taskId");
 
-  if (!draftId || !taskId) {
+  if (!targetEmployee.ok) {
     redirect(timesPath({ error: "timer-ungueltig" }));
+  }
+
+  if (!draftId || !taskId) {
+    redirect(timesPath(
+      { error: "timer-ungueltig" },
+      targetEmployee.employeeId,
+      employee.id,
+    ));
+  }
+
+  const canBookTask = await canBookTaskForEmployee({
+    employeeId: targetEmployee.employeeId,
+    taskId,
+  });
+
+  if (!canBookTask) {
+    redirect(timesPath(
+      { error: "timer-aufgabe" },
+      targetEmployee.employeeId,
+      employee.id,
+    ));
   }
 
   const supabase = await createSupabaseServerClient();
@@ -174,25 +236,58 @@ export async function updateTimerDraftAction(formData: FormData) {
       billable: formData.get("billable") === "1",
     })
     .eq("id", draftId)
-    .eq("employee_id", employee.id);
+    .eq("employee_id", targetEmployee.employeeId);
 
   revalidatePath("/zeiten");
-  redirect(timesPath(error ? { error: "timer-speichern" } : { success: "timer-aktualisiert" }));
+  redirect(timesPath(
+    error ? { error: "timer-speichern" } : { success: "timer-aktualisiert" },
+    targetEmployee.employeeId,
+    employee.id,
+  ));
 }
 
 export async function stopTimerDraftAction(formData: FormData) {
   const employee = await requireEmployeeSession();
+  const targetEmployee = await resolveTimeEntryTargetEmployee({
+    currentEmployee: employee,
+    requestedEmployeeId: formValue(formData, "employeeId"),
+  });
   const draftId = formValue(formData, "draftId");
   const taskId = formValue(formData, "taskId");
 
-  if (!draftId || !taskId) {
+  if (!targetEmployee.ok) {
     redirect(timesPath({ error: "timer-ungueltig" }));
   }
 
-  const draft = await getOwnedTimerDraft(draftId, employee.id);
+  if (!draftId || !taskId) {
+    redirect(timesPath(
+      { error: "timer-ungueltig" },
+      targetEmployee.employeeId,
+      employee.id,
+    ));
+  }
+
+  const canBookTask = await canBookTaskForEmployee({
+    employeeId: targetEmployee.employeeId,
+    taskId,
+  });
+
+  if (!canBookTask) {
+    redirect(timesPath(
+      { error: "timer-aufgabe" },
+      targetEmployee.employeeId,
+      employee.id,
+    ));
+  }
+
+  const draft = await getOwnedTimerDraft(draftId, targetEmployee.employeeId);
 
   if (!draft || draft.status !== "running") {
-    redirect(timesPath({ error: "timer-stoppen" }));
+    redirect(timesPath(
+      { error: "timer-stoppen" },
+      targetEmployee.employeeId,
+      employee.id,
+    ));
   }
 
   const supabase = await createSupabaseServerClient();
@@ -206,18 +301,34 @@ export async function stopTimerDraftAction(formData: FormData) {
       status: "stopped",
     })
     .eq("id", draftId)
-    .eq("employee_id", employee.id);
+    .eq("employee_id", targetEmployee.employeeId);
 
   revalidatePath("/zeiten");
-  redirect(timesPath(error ? { error: "timer-stoppen" } : { success: "timer-gestoppt" }));
+  redirect(timesPath(
+    error ? { error: "timer-stoppen" } : { success: "timer-gestoppt" },
+    targetEmployee.employeeId,
+    employee.id,
+  ));
 }
 
 export async function discardTimerDraftAction(formData: FormData) {
   const employee = await requireEmployeeSession();
+  const targetEmployee = await resolveTimeEntryTargetEmployee({
+    currentEmployee: employee,
+    requestedEmployeeId: formValue(formData, "employeeId"),
+  });
   const draftId = formValue(formData, "draftId");
 
-  if (!draftId) {
+  if (!targetEmployee.ok) {
     redirect(timesPath({ error: "timer-ungueltig" }));
+  }
+
+  if (!draftId) {
+    redirect(timesPath(
+      { error: "timer-ungueltig" },
+      targetEmployee.employeeId,
+      employee.id,
+    ));
   }
 
   const supabase = await createSupabaseServerClient();
@@ -225,10 +336,14 @@ export async function discardTimerDraftAction(formData: FormData) {
     .from("timer_drafts")
     .delete()
     .eq("id", draftId)
-    .eq("employee_id", employee.id);
+    .eq("employee_id", targetEmployee.employeeId);
 
   revalidatePath("/zeiten");
-  redirect(timesPath(error ? { error: "timer-verwerfen" } : { success: "timer-verworfen" }));
+  redirect(timesPath(
+    error ? { error: "timer-verwerfen" } : { success: "timer-verworfen" },
+    targetEmployee.employeeId,
+    employee.id,
+  ));
 }
 
 export async function saveStoppedTimerDraftAction(
@@ -236,9 +351,23 @@ export async function saveStoppedTimerDraftAction(
   formData: FormData,
 ): Promise<TimerActionState> {
   const employee = await requireEmployeeSession();
+  const targetEmployee = await resolveTimeEntryTargetEmployee({
+    currentEmployee: employee,
+    requestedEmployeeId: formValue(formData, "employeeId"),
+  });
   const draftId = formValue(formData, "draftId");
   const taskId = formValue(formData, "taskId");
-  const draft = draftId ? await getOwnedTimerDraft(draftId, employee.id) : null;
+
+  if (!targetEmployee.ok) {
+    return {
+      formError: targetEmployee.formError,
+      fieldErrors: {},
+    };
+  }
+
+  const draft = draftId
+    ? await getOwnedTimerDraft(draftId, targetEmployee.employeeId)
+    : null;
 
   if (!draft) {
     return {
@@ -265,6 +394,18 @@ export async function saveStoppedTimerDraftAction(
     };
   }
 
+  const canBookTask = await canBookTaskForEmployee({
+    employeeId: targetEmployee.employeeId,
+    taskId: parsed.value.taskId,
+  });
+
+  if (!canBookTask) {
+    return {
+      formError: "Diese Aufgabe ist für diese:n Mitarbeitende:n nicht freigegeben.",
+      fieldErrors: { taskId: "not-bookable" },
+    };
+  }
+
   const readiness = canSaveStoppedTimerDraft({
     ...draft,
     taskId: parsed.value.taskId,
@@ -287,7 +428,7 @@ export async function saveStoppedTimerDraftAction(
 
   const supabase = await createSupabaseServerClient();
   const resumedEntry = draft.resumedTimeEntryId
-    ? await getResumedTimeEntry(draft.resumedTimeEntryId, employee.id)
+    ? await getResumedTimeEntry(draft.resumedTimeEntryId, targetEmployee.employeeId)
     : null;
 
   if (draft.resumedTimeEntryId && !resumedEntry) {
@@ -320,7 +461,7 @@ export async function saveStoppedTimerDraftAction(
         updated_by_employee_id: employee.id,
       })
       .eq("id", draft.resumedTimeEntryId)
-      .eq("employee_id", employee.id);
+      .eq("employee_id", targetEmployee.employeeId);
 
     if (updateError) {
       return {
@@ -346,16 +487,20 @@ export async function saveStoppedTimerDraftAction(
       };
     }
 
-    await deleteTimerDraft(draft.id, employee.id);
+    await deleteTimerDraft(draft.id, targetEmployee.employeeId);
 
     revalidatePath("/zeiten");
-    redirect(timesPath({ success: "zeit-aktualisiert" }));
+    redirect(timesPath(
+      { success: "zeit-aktualisiert" },
+      targetEmployee.employeeId,
+      employee.id,
+    ));
   }
 
   const { data, error: insertError } = await supabase
     .from("time_entries")
     .insert({
-      employee_id: employee.id,
+      employee_id: targetEmployee.employeeId,
       task_id: parsed.value.taskId,
       description: parsed.value.description,
       work_date: parsed.value.workDate,
@@ -393,8 +538,12 @@ export async function saveStoppedTimerDraftAction(
     };
   }
 
-  await deleteTimerDraft(draft.id, employee.id);
+  await deleteTimerDraft(draft.id, targetEmployee.employeeId);
 
   revalidatePath("/zeiten");
-  redirect(timesPath({ success: "timer-gespeichert" }));
+  redirect(timesPath(
+    { success: "timer-gespeichert" },
+    targetEmployee.employeeId,
+    employee.id,
+  ));
 }

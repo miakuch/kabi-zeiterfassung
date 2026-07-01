@@ -21,6 +21,27 @@ type EmployeeRow = {
   auth_user_id: string | null;
 };
 
+export async function getActiveEmployeeOptions() {
+  noStore();
+
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("employees")
+    .select("id, name, email")
+    .eq("status", "active")
+    .order("name", { ascending: true });
+
+  if (error) {
+    throw new Error("Mitarbeitende konnten nicht geladen werden.");
+  }
+
+  return (data ?? []).map((employee) => ({
+    id: employee.id as string,
+    name: employee.name as string,
+    email: employee.email as string,
+  }));
+}
+
 export async function getEmployees(): Promise<EmployeeListItem[]> {
   noStore();
 

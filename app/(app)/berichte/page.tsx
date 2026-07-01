@@ -16,45 +16,56 @@ import { ReportTable } from "@/features/reports/table/report-table";
 
 type ReportsPageProps = {
   searchParams: Promise<{
-    billable?: string;
-    customer?: string;
-    employee?: string;
-    end?: string;
-    exportMonth?: string;
-    exportProject?: string;
-    project?: string;
-    quick?: string;
-    showAmounts?: string;
-    start?: string;
-    task?: string;
-    group?: string;
+    billable?: string | string[];
+    customer?: string | string[];
+    employee?: string | string[];
+    end?: string | string[];
+    exportMonth?: string | string[];
+    exportProject?: string | string[];
+    project?: string | string[];
+    quick?: string | string[];
+    showAmounts?: string | string[];
+    start?: string | string[];
+    task?: string | string[];
+    group?: string | string[];
   }>;
 };
 
 function preservedReportParams(params: Awaited<ReportsPageProps["searchParams"]>) {
   return Object.entries(params)
     .filter(([key, value]) => Boolean(value) && !key.startsWith("export"))
-    .map(([name, value]) => ({
-      name,
-      value: value as string,
-    }));
+    .flatMap(([name, value]) =>
+      (Array.isArray(value) ? value : [value]).flatMap((item) =>
+        item ? [{ name, value: item }] : [],
+      ),
+    );
 }
 
 function paramsHref(
   params: Awaited<ReportsPageProps["searchParams"]>,
-  updates: Record<string, string | null>,
+  updates: Record<string, string | string[] | null>,
 ) {
   const searchParams = new URLSearchParams();
 
   for (const [key, value] of Object.entries(params)) {
     if (value && !(key in updates)) {
-      searchParams.set(key, value);
+      for (const item of Array.isArray(value) ? value : [value]) {
+        if (item) {
+          searchParams.append(key, item);
+        }
+      }
     }
   }
 
   for (const [key, value] of Object.entries(updates)) {
-    if (value) {
-      searchParams.set(key, value);
+    if (!value) {
+      continue;
+    }
+
+    for (const item of Array.isArray(value) ? value : [value]) {
+      if (item) {
+        searchParams.append(key, item);
+      }
     }
   }
 
@@ -99,12 +110,24 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     searchParams,
   ]);
   const filters = parseReportFilters(params);
-  const grouping = parseReportChartGrouping(params.group, employee.role);
-  const showAmounts = employee.role === "admin" && params.showAmounts === "1";
+  const grouping = parseReportChartGrouping(
+    Array.isArray(params.group) ? params.group[0] : params.group,
+    employee.role,
+  );
+  const showAmounts =
+    employee.role === "admin" &&
+    (Array.isArray(params.showAmounts)
+      ? params.showAmounts[0]
+      : params.showAmounts) === "1";
   const exportSelection = resolveExportPreviewSelection({
-    exportProjectId: params.exportProject,
-    exportMonth: params.exportMonth,
-    reportProjectId: filters.projectId,
+    exportProjectId: Array.isArray(params.exportProject)
+      ? params.exportProject[0]
+      : params.exportProject,
+    exportMonth: Array.isArray(params.exportMonth)
+      ? params.exportMonth[0]
+      : params.exportMonth,
+    reportProjectId:
+      filters.projectIds.length === 1 ? filters.projectIds[0] : "",
     reportStartDate: filters.startDate,
     reportEndDate: filters.endDate,
   });
@@ -162,10 +185,10 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
           filters.quickFilter,
           filters.startDate,
           filters.endDate,
-          filters.customerId,
-          filters.projectId,
-          filters.taskId,
-          filters.employeeId,
+          filters.customerIds.join(","),
+          filters.projectIds.join(","),
+          filters.taskIds.join(","),
+          filters.employeeIds.join(","),
           filters.billable,
         ].join(":")}
         filters={filters}

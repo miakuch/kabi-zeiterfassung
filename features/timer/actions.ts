@@ -4,10 +4,15 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireEmployeeSession } from "@/lib/auth/require-session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { addTimeEntrySegment } from "@/features/time-entries/segments/actions";
 import {
   canSaveStoppedTimerDraft,
   type TimerDraft,
 } from "./domain/timer-draft";
+import {
+  mergeResumedTimeEntry,
+  type ResumableTimeEntry,
+} from "./domain/resume-entry";
 import {
   formValue,
   validateManualTimeEntry,
@@ -42,7 +47,7 @@ async function getOwnedTimerDraft(draftId: string, employeeId: string) {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from("timer_drafts")
-    .select("id, task_id, description, billable, started_at_utc, stopped_at_utc, status")
+    .select("id, resumed_time_entry_id, task_id, description, billable, started_at_utc, stopped_at_utc, status")
     .eq("id", draftId)
     .eq("employee_id", employeeId)
     .maybeSingle();
@@ -53,6 +58,7 @@ async function getOwnedTimerDraft(draftId: string, employeeId: string) {
 
   return {
     id: data.id as string,
+    resumedTimeEntryId: data.resumed_time_entry_id as string | null,
     taskId: data.task_id as string,
     description: data.description as string | null,
     billable: data.billable as boolean,
@@ -60,6 +66,37 @@ async function getOwnedTimerDraft(draftId: string, employeeId: string) {
     stoppedAtUtc: data.stopped_at_utc as string | null,
     status: data.status as TimerDraft["status"],
   };
+}
+
+async function getResumedTimeEntry(entryId: string, employeeId: string) {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("time_entries")
+    .select("id, work_date, start_time, end_time, duration_minutes")
+    .eq("id", entryId)
+    .eq("employee_id", employeeId)
+    .maybeSingle();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return {
+    workDate: data.work_date as string,
+    startTime: data.start_time as string,
+    endTime: data.end_time as string,
+    durationMinutes: data.duration_minutes as number,
+  } satisfies ResumableTimeEntry;
+}
+
+async function deleteTimerDraft(draftId: string, employeeId: string) {
+  const supabase = await createSupabaseServerClient();
+
+  await supabase
+    .from("timer_drafts")
+    .delete()
+    .eq("id", draftId)
+    .eq("employee_id", employeeId);
 }
 
 export async function startTimerDraftAction(
@@ -249,31 +286,114 @@ export async function saveStoppedTimerDraftAction(
   }
 
   const supabase = await createSupabaseServerClient();
-  const { error: insertError } = await supabase.from("time_entries").insert({
-    employee_id: employee.id,
-    task_id: parsed.value.taskId,
-    description: parsed.value.description,
-    work_date: parsed.value.workDate,
-    start_time: parsed.value.startTime,
-    end_time: parsed.value.endTime,
-    duration_minutes: parsed.value.durationMinutes,
-    billable: parsed.value.billable,
-    created_by_employee_id: employee.id,
-    updated_by_employee_id: employee.id,
-  });
+  const resumedEntry = draft.resumedTimeEntryId
+    ? await getResumedTimeEntry(draft.resumedTimeEntryId, employee.id)
+    : null;
 
-  if (insertError) {
+  if (draft.resumedTimeEntryId && !resumedEntry) {
+    return {
+      formError: "Der fortgesetzte Eintrag wurde nicht gefunden.",
+      fieldErrors: {},
+    };
+  }
+
+  if (draft.resumedTimeEntryId && resumedEntry) {
+    const mergedEntry = mergeResumedTimeEntry({
+      existingEntry: resumedEntry,
+      segment: {
+        workDate: parsed.value.workDate,
+        startTime: parsed.value.startTime,
+        endTime: parsed.value.endTime,
+        durationMinutes: parsed.value.durationMinutes,
+      },
+    });
+    const { error: updateError } = await supabase
+      .from("time_entries")
+      .update({
+        task_id: parsed.value.taskId,
+        description: parsed.value.description,
+        work_date: mergedEntry.workDate,
+        start_time: mergedEntry.startTime,
+        end_time: mergedEntry.endTime,
+        duration_minutes: mergedEntry.durationMinutes,
+        billable: parsed.value.billable,
+        updated_by_employee_id: employee.id,
+      })
+      .eq("id", draft.resumedTimeEntryId)
+      .eq("employee_id", employee.id);
+
+    if (updateError) {
+      return {
+        formError: "Fortgesetzter Eintrag konnte nicht gespeichert werden.",
+        fieldErrors: {},
+      };
+    }
+
+    const { error: segmentError } = await addTimeEntrySegment({
+      entryId: draft.resumedTimeEntryId,
+      segment: {
+        workDate: parsed.value.workDate,
+        startTime: parsed.value.startTime,
+        endTime: parsed.value.endTime,
+        durationMinutes: parsed.value.durationMinutes,
+      },
+    });
+
+    if (segmentError) {
+      return {
+        formError: "Fortgesetztes Segment konnte nicht gespeichert werden.",
+        fieldErrors: {},
+      };
+    }
+
+    await deleteTimerDraft(draft.id, employee.id);
+
+    revalidatePath("/zeiten");
+    redirect(timesPath({ success: "zeit-aktualisiert" }));
+  }
+
+  const { data, error: insertError } = await supabase
+    .from("time_entries")
+    .insert({
+      employee_id: employee.id,
+      task_id: parsed.value.taskId,
+      description: parsed.value.description,
+      work_date: parsed.value.workDate,
+      start_time: parsed.value.startTime,
+      end_time: parsed.value.endTime,
+      duration_minutes: parsed.value.durationMinutes,
+      billable: parsed.value.billable,
+      created_by_employee_id: employee.id,
+      updated_by_employee_id: employee.id,
+    })
+    .select("id")
+    .single();
+
+  if (insertError || !data) {
     return {
       formError: "Timer konnte nicht als Zeiteintrag gespeichert werden.",
       fieldErrors: {},
     };
   }
 
-  await supabase
-    .from("timer_drafts")
-    .delete()
-    .eq("id", draft.id)
-    .eq("employee_id", employee.id);
+  const { error: segmentError } = await addTimeEntrySegment({
+    entryId: data.id as string,
+    segment: {
+      workDate: parsed.value.workDate,
+      startTime: parsed.value.startTime,
+      endTime: parsed.value.endTime,
+      durationMinutes: parsed.value.durationMinutes,
+    },
+  });
+
+  if (segmentError) {
+    return {
+      formError: "Timersegment konnte nicht gespeichert werden.",
+      fieldErrors: {},
+    };
+  }
+
+  await deleteTimerDraft(draft.id, employee.id);
 
   revalidatePath("/zeiten");
   redirect(timesPath({ success: "timer-gespeichert" }));

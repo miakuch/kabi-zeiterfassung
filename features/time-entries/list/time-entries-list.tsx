@@ -2,6 +2,7 @@
 
 import { useActionState, useMemo, useState } from "react";
 import {
+  ChevronDown,
   Copy,
   Euro,
   Pencil,
@@ -94,14 +95,18 @@ function pageHref(page: number) {
 
 function DayGroup({
   group,
+  expandedEntryIds,
   onDelete,
   onEdit,
   onDuplicate,
+  onToggleExpanded,
 }: {
   group: TimeEntryListGroup<TimeEntryListItem>;
+  expandedEntryIds: Set<string>;
   onDelete: (entry: TimeEntryListItem) => void;
   onEdit: (entry: TimeEntryListItem) => void;
   onDuplicate: (entry: TimeEntryListItem) => void;
+  onToggleExpanded: (entryId: string) => void;
 }) {
   return (
     <section className="grid gap-2">
@@ -113,29 +118,54 @@ function DayGroup({
       </div>
 
       <div className="grid gap-2">
-        {group.entries.map((entry) => (
+        {group.entries.map((entry) => {
+          const hasSegments = entry.segments.length > 1;
+          const isExpanded = expandedEntryIds.has(entry.id);
+
+          return (
           <article
             className="grid gap-3 rounded-md border bg-background p-3 transition hover:border-primary"
             key={entry.id}
           >
             <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
-              <button
-                className="grid min-w-0 gap-1 text-left"
-                onClick={() => onEdit(entry)}
-                type="button"
-              >
-                <span className="truncate text-sm font-semibold">
-                  {entry.description}
-                </span>
-                <span className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
-                  <span
-                    className="size-2.5 shrink-0 rounded-full border"
-                    style={{ backgroundColor: entry.projectColor }}
-                    aria-hidden="true"
-                  />
-                  <span className="truncate">{entryContext(entry)}</span>
-                </span>
-              </button>
+              <div className="flex min-w-0 items-start gap-2">
+                {hasSegments ? (
+                  <button
+                    aria-expanded={isExpanded}
+                    className="mt-0.5 inline-flex min-h-7 min-w-10 items-center justify-center gap-1 rounded-md bg-accent px-2 text-xs font-semibold text-accent-foreground transition hover:bg-secondary"
+                    onClick={() => onToggleExpanded(entry.id)}
+                    title={isExpanded ? "Segmente einklappen" : "Segmente anzeigen"}
+                    type="button"
+                  >
+                    {entry.segments.length}
+                    <ChevronDown
+                      className={cn(
+                        "size-3 transition",
+                        isExpanded && "rotate-180",
+                      )}
+                      aria-hidden="true"
+                    />
+                  </button>
+                ) : null}
+
+                <button
+                  className="grid min-w-0 gap-1 text-left"
+                  onClick={() => onEdit(entry)}
+                  type="button"
+                >
+                  <span className="truncate text-sm font-semibold">
+                    {entry.description}
+                  </span>
+                  <span className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
+                    <span
+                      className="size-2.5 shrink-0 rounded-full border"
+                      style={{ backgroundColor: entry.projectColor }}
+                      aria-hidden="true"
+                    />
+                    <span className="truncate">{entryContext(entry)}</span>
+                  </span>
+                </button>
+              </div>
 
               <div className="flex flex-wrap items-center gap-2 sm:justify-end">
                 <span className="min-w-[140px] rounded-md bg-card px-2 py-1 text-center font-mono text-sm">
@@ -217,8 +247,28 @@ function DayGroup({
                 </Button>
               </div>
             </div>
+
+            {hasSegments && isExpanded ? (
+              <div className="grid gap-1 border-l-2 border-accent pl-4 sm:ml-12">
+                {entry.segments.map((segment) => (
+                  <div
+                    className="flex flex-wrap items-center gap-2 rounded-md bg-card px-3 py-2 text-sm"
+                    key={segment.id}
+                  >
+                    <span className="font-mono">
+                      {trimSeconds(segment.startTime)}-{trimSeconds(segment.endTime)}
+                    </span>
+                    <span className="text-muted-foreground">|</span>
+                    <span className="font-mono font-semibold">
+                      {formatDuration(segment.durationMinutes)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : null}
           </article>
-        ))}
+        );
+        })}
       </div>
     </section>
   );
@@ -228,6 +278,9 @@ export function TimeEntriesList({ result, tasks }: TimeEntriesListProps) {
   const [editor, setEditor] = useState<EditorState>(null);
   const [deleteCandidate, setDeleteCandidate] =
     useState<TimeEntryListItem | null>(null);
+  const [expandedEntryIds, setExpandedEntryIds] = useState<Set<string>>(
+    () => new Set(),
+  );
   const [editState, editAction, isSaving] = useActionState(
     upsertTimeEntryFromListAction,
     initialTimeEntryEditActionState,
@@ -243,6 +296,20 @@ export function TimeEntriesList({ result, tasks }: TimeEntriesListProps) {
     return editFieldErrors[field]
       ? "border-destructive focus:border-destructive focus:ring-destructive/20"
       : "";
+  }
+
+  function toggleExpandedEntry(entryId: string) {
+    setExpandedEntryIds((current) => {
+      const next = new Set(current);
+
+      if (next.has(entryId)) {
+        next.delete(entryId);
+      } else {
+        next.add(entryId);
+      }
+
+      return next;
+    });
   }
 
   return (
@@ -279,11 +346,13 @@ export function TimeEntriesList({ result, tasks }: TimeEntriesListProps) {
         <div className="grid gap-5">
           {result.groups.map((group) => (
             <DayGroup
+              expandedEntryIds={expandedEntryIds}
               group={group}
               key={group.workDate}
               onDelete={setDeleteCandidate}
               onDuplicate={(entry) => setEditor({ mode: "duplicate", entry })}
               onEdit={(entry) => setEditor({ mode: "edit", entry })}
+              onToggleExpanded={toggleExpandedEntry}
             />
           ))}
         </div>

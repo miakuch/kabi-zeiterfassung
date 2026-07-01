@@ -2,6 +2,7 @@ export type TimerDraftStatus = "running" | "stopped";
 
 export type TimerDraft = {
   id: string;
+  resumedTimeEntryId?: string | null;
   taskId: string;
   description: string | null;
   billable: boolean;
@@ -84,6 +85,7 @@ export function startTimerDraft({
     ok: true,
     draft: {
       id: input.id,
+      resumedTimeEntryId: null,
       taskId: input.taskId,
       description: trimDescription(input.description),
       billable: input.billable,

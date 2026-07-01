@@ -20,6 +20,15 @@ export type TimeEntryListItem = {
   projectCode: string | null;
   projectColor: string;
   customerName: string;
+  segments: TimeEntrySegment[];
+};
+
+export type TimeEntrySegment = {
+  id: string;
+  workDate: string;
+  startTime: string;
+  endTime: string;
+  durationMinutes: number;
 };
 
 export type TimeEntryListResult = {
@@ -59,6 +68,15 @@ type TimeEntryRow = {
   duration_minutes: number;
   billable: boolean;
   tasks: RelatedTask | RelatedTask[] | null;
+  time_entry_segments: TimeEntrySegmentRow[] | null;
+};
+
+type TimeEntrySegmentRow = {
+  id: string;
+  work_date: string;
+  start_time: string;
+  end_time: string;
+  duration_minutes: number;
 };
 
 function firstRelated<T>(value: T | T[] | null) {
@@ -92,6 +110,18 @@ function toListItem(row: TimeEntryRow): TimeEntryListItem | null {
     return null;
   }
 
+  const segments = (row.time_entry_segments ?? [])
+    .map((segment) => ({
+      id: segment.id,
+      workDate: segment.work_date,
+      startTime: segment.start_time,
+      endTime: segment.end_time,
+      durationMinutes: segment.duration_minutes,
+    }))
+    .sort((a, b) =>
+      `${a.workDate} ${a.startTime}`.localeCompare(`${b.workDate} ${b.startTime}`),
+    );
+
   return {
     id: row.id,
     taskId: row.task_id,
@@ -106,6 +136,18 @@ function toListItem(row: TimeEntryRow): TimeEntryListItem | null {
     projectCode: project.code,
     projectColor: project.color,
     customerName: customer.name,
+    segments:
+      segments.length > 0
+        ? segments
+        : [
+            {
+              id: row.id,
+              workDate: row.work_date,
+              startTime: row.start_time,
+              endTime: row.end_time,
+              durationMinutes: row.duration_minutes,
+            },
+          ],
   };
 }
 
@@ -127,7 +169,7 @@ export async function getOwnTimeEntryList({
   const { data, count, error } = await supabase
     .from("time_entries")
     .select(
-      "id, task_id, description, work_date, start_time, end_time, duration_minutes, billable, tasks(id, name, projects(name, code, color, customers(name)))",
+      "id, task_id, description, work_date, start_time, end_time, duration_minutes, billable, tasks(id, name, projects(name, code, color, customers(name))), time_entry_segments(id, work_date, start_time, end_time, duration_minutes)",
       { count: "exact" },
     )
     .eq("employee_id", employeeId)

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireEmployeeSession } from "@/lib/auth/require-session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { addTimeEntrySegment } from "@/features/time-entries/segments/actions";
 import {
   formValue,
   timeEntryPreferenceSchema,
@@ -61,22 +62,43 @@ export async function createManualTimeEntry(
   }
 
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.from("time_entries").insert({
-    employee_id: employee.id,
-    task_id: parsed.value.taskId,
-    description: parsed.value.description,
-    work_date: parsed.value.workDate,
-    start_time: parsed.value.startTime,
-    end_time: parsed.value.endTime,
-    duration_minutes: parsed.value.durationMinutes,
-    billable: parsed.value.billable,
-    created_by_employee_id: employee.id,
-    updated_by_employee_id: employee.id,
-  });
+  const { data, error } = await supabase
+    .from("time_entries")
+    .insert({
+      employee_id: employee.id,
+      task_id: parsed.value.taskId,
+      description: parsed.value.description,
+      work_date: parsed.value.workDate,
+      start_time: parsed.value.startTime,
+      end_time: parsed.value.endTime,
+      duration_minutes: parsed.value.durationMinutes,
+      billable: parsed.value.billable,
+      created_by_employee_id: employee.id,
+      updated_by_employee_id: employee.id,
+    })
+    .select("id")
+    .single();
 
-  if (error) {
+  if (error || !data) {
     return {
       formError: "Der Eintrag konnte nicht gespeichert werden.",
+      fieldErrors: {},
+    };
+  }
+
+  const { error: segmentError } = await addTimeEntrySegment({
+    entryId: data.id as string,
+    segment: {
+      workDate: parsed.value.workDate,
+      startTime: parsed.value.startTime,
+      endTime: parsed.value.endTime,
+      durationMinutes: parsed.value.durationMinutes,
+    },
+  });
+
+  if (segmentError) {
+    return {
+      formError: "Der Eintrag konnte nicht vollständig gespeichert werden.",
       fieldErrors: {},
     };
   }

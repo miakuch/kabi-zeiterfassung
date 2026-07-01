@@ -65,6 +65,8 @@ const fieldLabels = {
   durationMinutes: "Dauer",
 } as const;
 
+const successMessageVisibleMs = 4000;
+
 function fieldErrorMessage(field: keyof typeof fieldLabels, error?: string) {
   if (!error) {
     return null;
@@ -189,6 +191,8 @@ export function TimeEntryBar({
     useState<CurrentTimerDraft | null>(null);
   const [optimisticStopDraft, setOptimisticStopDraft] =
     useState<CurrentTimerDraft | null>(null);
+  const [dismissedSuccessMessage, setDismissedSuccessMessage] =
+    useState<string | null>(null);
   const [description, setDescription] = useState(timerDraft?.description ?? "");
   const resolvedInitialTaskId = resolveInitialTaskId({
     initialTaskId,
@@ -240,6 +244,11 @@ export function TimeEntryBar({
     timerDraft;
   const localSuccessMessage =
     timerStopState.successMessage ?? timerStartState.successMessage ?? null;
+  const activeSuccessMessage = localSuccessMessage ?? successMessage ?? null;
+  const visibleSuccessMessage =
+    activeSuccessMessage && dismissedSuccessMessage !== activeSuccessMessage
+      ? activeSuccessMessage
+      : null;
 
   const selectedTask = useMemo(() => getTaskById(tasks, taskId), [tasks, taskId]);
   const selectedEmployee = useMemo(
@@ -272,6 +281,29 @@ export function TimeEntryBar({
 
     return () => window.clearInterval(intervalId);
   }, [currentTimerDraft]);
+
+  useEffect(() => {
+    if (!activeSuccessMessage) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setDismissedSuccessMessage(activeSuccessMessage);
+
+      if (!successMessage) {
+        return;
+      }
+
+      const nextSearchParams = new URLSearchParams(searchParams.toString());
+      nextSearchParams.delete("success");
+      const queryString = nextSearchParams.toString();
+      router.replace(queryString ? `${pathname}?${queryString}` : pathname, {
+        scroll: false,
+      });
+    }, successMessageVisibleMs);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [activeSuccessMessage, pathname, router, searchParams, successMessage]);
 
   function persistPreferences(nextEntryMode: EntryMode, nextManualMode = manualMode) {
     startTransition(() => {
@@ -834,9 +866,9 @@ export function TimeEntryBar({
         </div>
       ) : null}
 
-      {localSuccessMessage || successMessage ? (
+      {visibleSuccessMessage ? (
         <p className="rounded-md border border-primary/30 bg-accent px-3 py-2 text-sm text-accent-foreground">
-          {localSuccessMessage ?? successMessage}
+          {visibleSuccessMessage}
         </p>
       ) : null}
 

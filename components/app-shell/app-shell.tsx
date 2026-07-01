@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { LogOut, Menu } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { signOut } from "@/app/(app)/actions";
 import { type CurrentEmployee } from "@/lib/auth/require-session";
 import { Navigation } from "./navigation";
@@ -51,50 +51,6 @@ export function AppShell({ employee, children }: AppShellProps) {
       </aside>
 
       <div className="lg:pl-64">
-        <header className="sticky top-0 z-20 border-b bg-card/95 px-4 py-3 backdrop-blur lg:px-8">
-          <div className="flex min-h-11 items-center justify-between gap-4">
-            <details className="group relative lg:hidden">
-              <summary className="flex size-10 cursor-pointer list-none items-center justify-center rounded-md border bg-background">
-                <Menu className="size-5" aria-hidden="true" />
-                <span className="sr-only">Navigation öffnen</span>
-              </summary>
-              <div className="absolute left-0 top-12 w-[calc(100vw-2rem)] max-w-72 rounded-md border bg-card p-3 shadow-lg">
-                <Navigation role={employee.role} />
-              </div>
-            </details>
-
-            <div className="min-w-0">
-              <div className="flex items-center gap-3">
-                <Image
-                  alt="KABI Consulting"
-                  className="hidden h-auto w-24 sm:block"
-                  height={38}
-                  priority
-                  src="/logo-kabi.png"
-                  width={96}
-                />
-                <p className="truncate text-sm font-semibold">
-                  KABI Zeiterfassung
-                </p>
-              </div>
-              <p className="truncate text-xs text-muted-foreground">
-                {employee.name} - {roleLabel}
-              </p>
-            </div>
-
-            <form action={signOut}>
-              <button
-                className="flex size-10 items-center justify-center rounded-md border bg-background text-muted-foreground transition hover:bg-secondary hover:text-secondary-foreground"
-                title="Abmelden"
-                type="submit"
-              >
-                <LogOut className="size-4" aria-hidden="true" />
-                <span className="sr-only">Abmelden</span>
-              </button>
-            </form>
-          </div>
-        </header>
-
         <main className="px-4 py-6 lg:px-8">{children}</main>
       </div>
     </div>

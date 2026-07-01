@@ -1,10 +1,19 @@
 import Link from "next/link";
-import { AlertTriangle, CircleDollarSign, Clock3, Plus } from "lucide-react";
+import {
+  AlertTriangle,
+  CircleDollarSign,
+  Clock3,
+  FolderKanban,
+  ListChecks,
+  Pencil,
+  Plus,
+} from "lucide-react";
 import {
   getProjectOverview,
   type ProjectOverviewItem,
 } from "@/features/projects/queries";
 import { requireAdminSession } from "@/lib/auth/require-session";
+import { cn } from "@/lib/utils";
 
 function formatHours(value: number | null) {
   if (value === null) {
@@ -28,6 +37,18 @@ function formatMoney(value: number | null) {
   }).format(value);
 }
 
+function formatRate(value: number | null) {
+  if (value === null) {
+    return "-";
+  }
+
+  return `${new Intl.NumberFormat("de-DE", {
+    currency: "EUR",
+    maximumFractionDigits: 0,
+    style: "currency",
+  }).format(value)}/h`;
+}
+
 function formatPercent(value: number | null) {
   if (value === null) {
     return "-";
@@ -46,8 +67,8 @@ function StatusBadge({ status }: { status: "active" | "inactive" }) {
     <span
       className={
         isActive
-          ? "inline-flex min-h-7 items-center rounded-md bg-accent px-2 text-xs font-medium text-accent-foreground"
-          : "inline-flex min-h-7 items-center rounded-md bg-secondary px-2 text-xs font-medium text-muted-foreground"
+          ? "inline-flex min-h-7 items-center rounded-md bg-accent px-2.5 text-xs font-medium text-accent-foreground"
+          : "inline-flex min-h-7 items-center rounded-md bg-secondary px-2.5 text-xs font-medium text-muted-foreground"
       }
     >
       {isActive ? "Aktiv" : "Inaktiv"}
@@ -62,7 +83,7 @@ function BudgetStatusBadge({
 }) {
   if (project.budgetStatus === "no-budget") {
     return (
-      <span className="inline-flex min-h-7 items-center rounded-md bg-secondary px-2 text-xs font-medium text-muted-foreground">
+      <span className="inline-flex min-h-7 items-center rounded-md bg-secondary px-2.5 text-xs font-medium text-muted-foreground">
         Kein Budget
       </span>
     );
@@ -70,16 +91,16 @@ function BudgetStatusBadge({
 
   if (project.budgetStatus === "exceeded") {
     return (
-      <span className="inline-flex min-h-7 items-center gap-1 rounded-md bg-[#ffe8e6] px-2 text-xs font-semibold text-destructive">
+      <span className="inline-flex min-h-7 items-center gap-1 rounded-md bg-[#ffe8e6] px-2.5 text-xs font-semibold text-destructive">
         <AlertTriangle className="size-3.5" aria-hidden="true" />
-        Ueberschritten
+        Überschritten
       </span>
     );
   }
 
   if (project.budgetStatus === "warning-80") {
     return (
-      <span className="inline-flex min-h-7 items-center gap-1 rounded-md bg-[#fff8e6] px-2 text-xs font-semibold text-[#6f4f00]">
+      <span className="inline-flex min-h-7 items-center gap-1 rounded-md bg-[#fff8e6] px-2.5 text-xs font-semibold text-[#6f4f00]">
         <AlertTriangle className="size-3.5" aria-hidden="true" />
         80 % erreicht
       </span>
@@ -87,7 +108,7 @@ function BudgetStatusBadge({
   }
 
   return (
-    <span className="inline-flex min-h-7 items-center rounded-md bg-accent px-2 text-xs font-medium text-accent-foreground">
+    <span className="inline-flex min-h-7 items-center rounded-md bg-accent px-2.5 text-xs font-medium text-accent-foreground">
       Im Budget
     </span>
   );
@@ -109,9 +130,102 @@ function BudgetBasisLabel({
   return "-";
 }
 
+function leadingBudgetPercent(project: ProjectOverviewItem) {
+  if (project.budgetAlertBasis === "hours") {
+    return project.hoursUsagePercent;
+  }
+
+  if (project.budgetAlertBasis === "amount") {
+    return project.amountUsagePercent;
+  }
+
+  return null;
+}
+
+function progressValue(value: number | null) {
+  if (value === null) {
+    return 0;
+  }
+
+  return Math.min(Math.max(value, 0), 100);
+}
+
+function progressColor(project: ProjectOverviewItem) {
+  if (project.budgetStatus === "exceeded") {
+    return "bg-destructive";
+  }
+
+  if (project.budgetStatus === "warning-80") {
+    return "bg-[#d99700]";
+  }
+
+  return "bg-primary";
+}
+
+function StatTile({
+  label,
+  value,
+  icon: Icon,
+}: {
+  label: string;
+  value: string | number;
+  icon: typeof FolderKanban;
+}) {
+  return (
+    <div className="rounded-md border bg-card p-4">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm font-medium text-muted-foreground">{label}</p>
+        <span className="inline-flex size-9 items-center justify-center rounded-md bg-accent text-accent-foreground">
+          <Icon className="size-4" aria-hidden="true" />
+        </span>
+      </div>
+      <p className="mt-3 text-2xl font-semibold tabular-nums">{value}</p>
+    </div>
+  );
+}
+
+function ProjectMetric({
+  label,
+  primary,
+  secondary,
+  icon: Icon,
+}: {
+  label: string;
+  primary: string;
+  secondary: string;
+  icon: typeof Clock3;
+}) {
+  return (
+    <div className="grid gap-2">
+      <p className="text-xs font-semibold uppercase text-muted-foreground">
+        {label}
+      </p>
+      <div className="flex items-start gap-2">
+        <Icon className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+        <div className="min-w-0">
+          <p className="font-semibold tabular-nums">{primary}</p>
+          <p className="mt-1 text-sm text-muted-foreground tabular-nums">
+            {secondary}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default async function ProjectsPage() {
   await requireAdminSession();
   const projects = await getProjectOverview();
+  const activeProjects = projects.filter((project) => project.status === "active");
+  const budgetAttentionCount = projects.filter(
+    (project) =>
+      project.budgetStatus === "warning-80" ||
+      project.budgetStatus === "exceeded",
+  ).length;
+  const activeTaskCount = projects.reduce(
+    (total, project) => total + project.activeTaskCount,
+    0,
+  );
 
   return (
     <section className="grid gap-6">
@@ -121,6 +235,10 @@ export default async function ProjectsPage() {
           <h1 className="mt-2 text-3xl font-semibold tracking-normal">
             Projekte
           </h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {projects.length} Projekte · {activeProjects.length} aktiv ·{" "}
+            {budgetAttentionCount} mit Budgethinweis
+          </p>
         </div>
 
         <Link
@@ -132,109 +250,139 @@ export default async function ProjectsPage() {
         </Link>
       </div>
 
-      <div className="overflow-hidden rounded-md border bg-card">
-        <div className="grid grid-cols-[minmax(220px,1.2fr)_minmax(180px,1fr)_120px_160px_180px_160px] gap-3 border-b bg-secondary px-4 py-3 text-xs font-semibold uppercase text-muted-foreground max-2xl:hidden">
-          <span>Projekt</span>
-          <span>Kunde</span>
-          <span>Status</span>
-          <span>Budgetstatus</span>
-          <span>Verbrauch</span>
-          <span>Offen</span>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <StatTile
+          icon={FolderKanban}
+          label="Aktive Projekte"
+          value={activeProjects.length}
+        />
+        <StatTile
+          icon={AlertTriangle}
+          label="Budgethinweise"
+          value={budgetAttentionCount}
+        />
+        <StatTile
+          icon={ListChecks}
+          label="Aktive Aufgaben"
+          value={activeTaskCount}
+        />
+      </div>
+
+      {projects.length === 0 ? (
+        <div className="rounded-md border bg-card px-4 py-8 text-sm text-muted-foreground">
+          Noch keine Projekte angelegt.
         </div>
-
-        {projects.length === 0 ? (
-          <div className="px-4 py-8 text-sm text-muted-foreground">
-            Noch keine Projekte angelegt.
+      ) : (
+        <div className="grid gap-3">
+          <div className="hidden grid-cols-[minmax(260px,1.45fr)_minmax(150px,0.9fr)_minmax(180px,1fr)_minmax(140px,0.8fr)_minmax(140px,0.8fr)_52px] gap-4 px-4 text-xs font-semibold uppercase text-muted-foreground xl:grid">
+            <span>Projekt</span>
+            <span>Kunde</span>
+            <span>Budget</span>
+            <span>Verbrauch</span>
+            <span>Offen</span>
+            <span className="text-right">Aktion</span>
           </div>
-        ) : null}
 
-        <div className="divide-y">
           {projects.map((project) => {
-            const leadingPercent =
-              project.budgetAlertBasis === "hours"
-                ? project.hoursUsagePercent
-                : project.budgetAlertBasis === "amount"
-                  ? project.amountUsagePercent
-                  : null;
+            const leadingPercent = leadingBudgetPercent(project);
+            const projectLabel = project.code
+              ? `${project.code} - ${project.name}`
+              : project.name;
+            const progress = progressValue(leadingPercent);
 
             return (
-              <Link
-                className="grid gap-4 px-4 py-4 2xl:grid-cols-[minmax(220px,1.2fr)_minmax(180px,1fr)_120px_160px_180px_160px] 2xl:items-center"
-                href={`/projekte/${project.id}`}
+              <article
+                className="grid gap-4 rounded-md border bg-card p-4 xl:grid-cols-[minmax(260px,1.45fr)_minmax(150px,0.9fr)_minmax(180px,1fr)_minmax(140px,0.8fr)_minmax(140px,0.8fr)_52px] xl:items-center"
                 key={project.id}
               >
                 <div className="min-w-0">
-                  <div className="flex items-start gap-3">
+                  <div className="flex items-start gap-3 sm:items-center">
                     <span
-                      className="mt-1 block size-4 shrink-0 rounded-sm border"
+                      className="mt-1 block h-12 w-1.5 shrink-0 rounded-full border sm:mt-0"
                       style={{ backgroundColor: project.color }}
                     />
                     <div className="min-w-0">
-                      <h2 className="truncate text-base font-semibold">
-                        {project.code ? `${project.code} - ` : ""}
+                      <div className="flex flex-wrap items-center gap-2">
+                        {project.code ? (
+                          <span className="inline-flex min-h-7 items-center rounded-md bg-secondary px-2.5 text-xs font-semibold text-secondary-foreground">
+                            {project.code}
+                          </span>
+                        ) : null}
+                        <StatusBadge status={project.status} />
+                      </div>
+                      <h2 className="mt-2 text-base font-semibold leading-snug">
                         {project.name}
                       </h2>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        {project.activeTaskCount} aktive Aufgaben /{" "}
-                        {project.totalTaskCount} gesamt
+                      <p className="mt-1 text-sm text-muted-foreground xl:hidden">
+                        {project.customerName}
+                      </p>
+                      <p className="mt-2 inline-flex items-center gap-2 text-sm text-muted-foreground">
+                        <ListChecks className="size-4" aria-hidden="true" />
+                        {project.activeTaskCount} aktiv / {project.totalTaskCount} gesamt
                       </p>
                     </div>
                   </div>
                 </div>
 
-                <div className="grid gap-1 text-sm">
-                  <span className="text-xs font-semibold uppercase text-muted-foreground 2xl:hidden">
-                    Kunde
-                  </span>
-                  <span>{project.customerName}</span>
-                </div>
-
-                <div className="grid gap-1 text-sm">
-                  <span className="text-xs font-semibold uppercase text-muted-foreground 2xl:hidden">
-                    Status
-                  </span>
-                  <StatusBadge status={project.status} />
+                <div className="hidden min-w-0 text-sm xl:block">
+                  <p className="truncate font-medium">{project.customerName}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Standardsatz {formatRate(project.defaultHourlyRate)}
+                  </p>
                 </div>
 
                 <div className="grid gap-2 text-sm">
-                  <span className="text-xs font-semibold uppercase text-muted-foreground 2xl:hidden">
-                    Budgetstatus
+                  <span className="text-xs font-semibold uppercase text-muted-foreground xl:hidden">
+                    Budget
                   </span>
-                  <BudgetStatusBadge project={project} />
-                  <span className="text-xs text-muted-foreground">
-                    Basis: {BudgetBasisLabel({ basis: project.budgetAlertBasis })}
-                    {leadingPercent !== null ? ` - ${formatPercent(leadingPercent)}` : ""}
-                  </span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <BudgetStatusBadge project={project} />
+                    <span className="text-xs text-muted-foreground">
+                      Basis: {BudgetBasisLabel({ basis: project.budgetAlertBasis })}
+                    </span>
+                  </div>
+                  <div className="h-2 overflow-hidden rounded-full bg-secondary">
+                    <div
+                      className={cn("h-full rounded-full", progressColor(project))}
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {leadingPercent !== null
+                      ? `${formatPercent(leadingPercent)} genutzt`
+                      : "Keine führende Budgetbasis"}
+                  </p>
                 </div>
 
-                <div className="grid gap-2 text-sm">
-                  <span className="text-xs font-semibold uppercase text-muted-foreground 2xl:hidden">
-                    Verbrauch
-                  </span>
-                  <span className="inline-flex items-center gap-2">
-                    <Clock3 className="size-4 text-muted-foreground" aria-hidden="true" />
-                    {formatHours(project.usedHours)}
-                  </span>
-                  <span className="inline-flex items-center gap-2 text-muted-foreground">
-                    <CircleDollarSign className="size-4" aria-hidden="true" />
-                    {formatMoney(project.usedAmount)}
-                  </span>
-                </div>
+                <ProjectMetric
+                  icon={Clock3}
+                  label="Verbrauch"
+                  primary={formatHours(project.usedHours)}
+                  secondary={formatMoney(project.usedAmount)}
+                />
 
-                <div className="grid gap-2 text-sm">
-                  <span className="text-xs font-semibold uppercase text-muted-foreground 2xl:hidden">
-                    Offen
-                  </span>
-                  <span>{formatHours(project.remainingHours)}</span>
-                  <span className="text-muted-foreground">
-                    {formatMoney(project.remainingAmount)}
-                  </span>
+                <ProjectMetric
+                  icon={CircleDollarSign}
+                  label="Offen"
+                  primary={formatHours(project.remainingHours)}
+                  secondary={formatMoney(project.remainingAmount)}
+                />
+
+                <div className="flex justify-end xl:justify-center">
+                  <Link
+                    aria-label={`Projekt bearbeiten: ${projectLabel}`}
+                    className="inline-flex size-11 items-center justify-center rounded-md border bg-background text-muted-foreground transition hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    href={`/projekte/${project.id}`}
+                    title={`Projekt bearbeiten: ${projectLabel}`}
+                  >
+                    <Pencil className="size-4" aria-hidden="true" />
+                  </Link>
                 </div>
-              </Link>
+              </article>
             );
           })}
         </div>
-      </div>
+      )}
     </section>
   );
 }

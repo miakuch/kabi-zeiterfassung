@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useActionState, useMemo, useState } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   flexRender,
   getCoreRowModel,
@@ -9,13 +10,13 @@ import {
   type ColumnDef,
   type SortingState,
 } from "@tanstack/react-table";
-import { ArrowDownUp } from "lucide-react";
+import { ArrowDownUp, Pencil, Save, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import type { EmployeeRole } from "@/lib/auth/require-session";
-import { NoScrollLink } from "@/features/reports/navigation/no-scroll-link";
-import { cn } from "@/lib/utils";
 import type { ReportEntry } from "../summary/domain";
+import { initialReportTimeEntryEditState } from "./action-state";
+import { updateReportTimeEntryAction } from "./actions";
 import {
-  formatReportAmount,
   formatReportHours,
   reportDateSortValue,
   reportProjectContext,
@@ -25,9 +26,6 @@ import {
 type ReportTableProps = {
   entries: ReportEntry[];
   role: EmployeeRole;
-  showAmounts: boolean;
-  showAmountsHref: string;
-  hideAmountsHref: string;
 };
 
 function headerButton(label: string) {
@@ -39,16 +37,34 @@ function headerButton(label: string) {
   );
 }
 
+function formatReportDate(value: string) {
+  return value.split("-").reverse().join(".");
+}
+
 export function ReportTable({
   entries,
   role,
-  showAmounts,
-  showAmountsHref,
-  hideAmountsHref,
 }: ReportTableProps) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [sorting, setSorting] = useState<SortingState>([
     { id: "date", desc: true },
   ]);
+  const [editor, setEditor] = useState<ReportEntry | null>(null);
+  const [editState, editAction, isSaving] = useActionState(
+    updateReportTimeEntryAction,
+    initialReportTimeEntryEditState,
+  );
+  const safeEditState = editState ?? initialReportTimeEntryEditState;
+  const editFieldErrors = safeEditState.fieldErrors ?? {};
+  const returnTo = `${pathname}${searchParams.size > 0 ? `?${searchParams}` : ""}`;
+
+  function inputClass(field: keyof typeof editFieldErrors) {
+    return editFieldErrors[field]
+      ? "border-destructive focus:border-destructive focus:ring-destructive/20"
+      : "";
+  }
+
   const columns = useMemo<Array<ColumnDef<ReportEntry>>>(
     () => [
       {
@@ -57,7 +73,7 @@ export function ReportTable({
         accessorFn: reportDateSortValue,
         cell: ({ row }) => (
           <span className="whitespace-nowrap">
-            {row.original.workDate.split("-").reverse().join(".")}
+            {formatReportDate(row.original.workDate)}
           </span>
         ),
       },
@@ -109,17 +125,24 @@ export function ReportTable({
         header: () => headerButton("Abrechenbar"),
         cell: ({ row }) => (row.original.billable ? "Ja" : "Nein"),
       },
-      ...(role === "admin" && showAmounts
-        ? ([
-            {
-              accessorKey: "billableAmount",
-              header: () => headerButton("Betrag"),
-              cell: ({ row }) => formatReportAmount(row.original.billableAmount),
-            } satisfies ColumnDef<ReportEntry>,
-          ] satisfies Array<ColumnDef<ReportEntry>>)
-        : []),
+      {
+        id: "actions",
+        header: () => "Aktion",
+        enableSorting: false,
+        cell: ({ row }) => (
+          <Button
+            className="size-9 px-0"
+            onClick={() => setEditor(row.original)}
+            type="button"
+            variant="outline"
+          >
+            <Pencil className="size-4" aria-hidden="true" />
+            <span className="sr-only">Eintrag bearbeiten</span>
+          </Button>
+        ),
+      },
     ],
-    [role, showAmounts],
+    [role],
   );
   // TanStack Table exposes non-memoizable helpers; this is the supported hook API.
   // eslint-disable-next-line react-hooks/incompatible-library
@@ -143,18 +166,6 @@ export function ReportTable({
             {entries.length} gefilterte Einträge.
           </p>
         </div>
-
-        {role === "admin" ? (
-          <NoScrollLink
-            className={cn(
-              "inline-flex min-h-10 items-center justify-center rounded-md border px-3 text-sm font-medium transition hover:bg-secondary",
-              showAmounts && "border-primary bg-accent text-accent-foreground",
-            )}
-            href={showAmounts ? hideAmountsHref : showAmountsHref}
-          >
-            {showAmounts ? "Beträge ausblenden" : "Beträge anzeigen"}
-          </NoScrollLink>
-        ) : null}
       </div>
 
       <div className="max-w-full overflow-x-auto rounded-md border">
@@ -167,17 +178,22 @@ export function ReportTable({
                     className="border-b px-3 py-2 text-left font-semibold"
                     key={header.id}
                   >
-                    {header.isPlaceholder ? null : (
-                      <button
-                        className="inline-flex text-left"
-                        onClick={header.column.getToggleSortingHandler()}
-                        type="button"
-                      >
-                        {flexRender(
+                    {header.isPlaceholder ? null : header.column.getCanSort() ? (
+                        <button
+                          className="inline-flex text-left"
+                          onClick={header.column.getToggleSortingHandler()}
+                          type="button"
+                        >
+                          {flexRender(
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
+                        </button>
+                      ) : (
+                        flexRender(
                           header.column.columnDef.header,
                           header.getContext(),
-                        )}
-                      </button>
+                        )
                     )}
                   </th>
                 ))}
@@ -208,6 +224,115 @@ export function ReportTable({
           </tbody>
         </table>
       </div>
+
+      {editor ? (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-foreground/20 p-4">
+          <div className="grid max-h-[calc(100vh-2rem)] w-full max-w-2xl gap-4 overflow-y-auto rounded-md border bg-card p-5 shadow-lg">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-lg font-semibold">Zeiteintrag bearbeiten</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {formatReportDate(editor.workDate)} ·{" "}
+                  {reportProjectContext(editor)}
+                </p>
+              </div>
+              <Button
+                className="size-9 px-0"
+                onClick={() => setEditor(null)}
+                type="button"
+                variant="ghost"
+              >
+                <X className="size-4" aria-hidden="true" />
+                <span className="sr-only">Schließen</span>
+              </Button>
+            </div>
+
+            <form action={editAction} className="grid gap-4">
+              <input name="entryId" type="hidden" value={editor.id} />
+              <input name="returnTo" type="hidden" value={returnTo} />
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-md border bg-background p-3">
+                  <p className="text-xs font-medium uppercase tracking-normal text-muted-foreground">
+                    Mitarbeitende
+                  </p>
+                  <p className="mt-1 font-medium">{editor.employeeName}</p>
+                </div>
+                <div className="rounded-md border bg-background p-3">
+                  <p className="text-xs font-medium uppercase tracking-normal text-muted-foreground">
+                    Datum
+                  </p>
+                  <p className="mt-1 font-medium">
+                    {formatReportDate(editor.workDate)}
+                  </p>
+                </div>
+              </div>
+
+              <label className="grid gap-1 text-sm font-medium">
+                Beschreibung
+                <textarea
+                  className={[
+                    "min-h-28 rounded-md border bg-background px-3 py-2 text-base outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/25",
+                    inputClass("description"),
+                  ].join(" ")}
+                  defaultValue={editor.description}
+                  name="description"
+                />
+              </label>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="grid gap-1 text-sm font-medium">
+                  Start
+                  <input
+                    className={[
+                      "min-h-11 rounded-md border bg-background px-3 text-base outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/25",
+                      inputClass("startTime"),
+                    ].join(" ")}
+                    defaultValue={trimReportTime(editor.startTime)}
+                    name="startTime"
+                    type="time"
+                  />
+                </label>
+                <label className="grid gap-1 text-sm font-medium">
+                  Ende
+                  <input
+                    className={[
+                      "min-h-11 rounded-md border bg-background px-3 text-base outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/25",
+                      inputClass("endTime"),
+                    ].join(" ")}
+                    defaultValue={trimReportTime(editor.endTime)}
+                    name="endTime"
+                    type="time"
+                  />
+                </label>
+              </div>
+
+              {safeEditState.formError ? (
+                <div className="grid gap-1 rounded-md border border-destructive/30 bg-background px-3 py-2 text-sm text-destructive">
+                  <p>{safeEditState.formError}</p>
+                  {Object.entries(editFieldErrors).map(([field, error]) => (
+                    <p key={field}>{error}</p>
+                  ))}
+                </div>
+              ) : null}
+
+              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <Button
+                  onClick={() => setEditor(null)}
+                  type="button"
+                  variant="outline"
+                >
+                  Abbrechen
+                </Button>
+                <Button disabled={isSaving} type="submit">
+                  <Save className="size-4" aria-hidden="true" />
+                  Speichern
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }

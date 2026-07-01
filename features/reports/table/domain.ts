@@ -1,4 +1,4 @@
-import { formatReportAmount, formatReportHours, type ReportEntry } from "../summary/domain";
+import { formatReportHours, type ReportEntry } from "../summary/domain";
 
 export function reportProjectContext(entry: ReportEntry) {
   const project = entry.projectCode
@@ -16,4 +16,4 @@ export function reportDateSortValue(entry: ReportEntry) {
   return `${entry.workDate} ${entry.startTime}`;
 }
 
-export { formatReportAmount, formatReportHours };
+export { formatReportHours };

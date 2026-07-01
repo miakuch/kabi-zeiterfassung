@@ -24,7 +24,6 @@ type ReportsPageProps = {
     exportProject?: string | string[];
     project?: string | string[];
     quick?: string | string[];
-    showAmounts?: string | string[];
     start?: string | string[];
     task?: string | string[];
     group?: string | string[];
@@ -114,11 +113,6 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     Array.isArray(params.group) ? params.group[0] : params.group,
     employee.role,
   );
-  const showAmounts =
-    employee.role === "admin" &&
-    (Array.isArray(params.showAmounts)
-      ? params.showAmounts[0]
-      : params.showAmounts) === "1";
   const exportSelection = resolveExportPreviewSelection({
     exportProjectId: Array.isArray(params.exportProject)
       ? params.exportProject[0]
@@ -215,10 +209,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
 
       <ReportTable
         entries={overview.entries}
-        hideAmountsHref={paramsHref(params, { showAmounts: null })}
         role={employee.role}
-        showAmounts={showAmounts}
-        showAmountsHref={paramsHref(params, { showAmounts: "1" })}
       />
     </section>
   );

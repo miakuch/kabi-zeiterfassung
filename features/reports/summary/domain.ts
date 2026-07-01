@@ -121,32 +121,46 @@ function daysBetween(startDate: string, endDate: string) {
   return Math.max(1, Math.round((end.getTime() - start.getTime()) / 86400000) + 1);
 }
 
-function getMonday(value: Date) {
-  const date = new Date(value);
-  const day = date.getUTCDay() || 7;
-
-  date.setUTCDate(date.getUTCDate() - day + 1);
-
-  return date;
-}
-
 function isoDate(value: Date) {
   return value.toISOString().slice(0, 10);
 }
 
-function timeBucketLabel(workDate: string, startDate: string, endDate: string) {
-  const spanDays = daysBetween(startDate, endDate);
-  const date = new Date(`${workDate}T00:00:00Z`);
+function buildDailyTimeSeries({
+  entries,
+  startDate,
+  endDate,
+}: {
+  entries: ReportEntry[];
+  startDate: string;
+  endDate: string;
+}) {
+  const minutesByDate = new Map<string, number>();
 
-  if (spanDays <= 45) {
-    return workDate;
+  for (const entry of entries) {
+    minutesByDate.set(
+      entry.workDate,
+      (minutesByDate.get(entry.workDate) ?? 0) + entry.durationMinutes,
+    );
   }
 
-  if (spanDays <= 190) {
-    return `KW ${isoDate(getMonday(date))}`;
+  const start = new Date(`${startDate}T00:00:00Z`);
+  const days = daysBetween(startDate, endDate);
+  const points: ReportChartPoint[] = [];
+
+  for (let dayOffset = 0; dayOffset < days; dayOffset += 1) {
+    const date = new Date(start);
+    date.setUTCDate(start.getUTCDate() + dayOffset);
+    const label = isoDate(date);
+    const minutes = minutesByDate.get(label) ?? 0;
+
+    points.push({
+      label,
+      minutes,
+      hours: roundHours(minutes),
+    });
   }
 
-  return workDate.slice(0, 7);
+  return points;
 }
 
 export function buildReportChartData({
@@ -173,9 +187,7 @@ export function buildReportChartData({
   }
 
   if (grouping === "time") {
-    return groupByLabel(entries, (entry) =>
-      timeBucketLabel(entry.workDate, startDate, endDate),
-    ).sort((a, b) => a.label.localeCompare(b.label, "de"));
+    return buildDailyTimeSeries({ entries, startDate, endDate });
   }
 
   return groupByLabel(entries, (entry) =>

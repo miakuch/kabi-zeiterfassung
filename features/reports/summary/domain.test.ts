@@ -88,17 +88,19 @@ describe("report chart data", () => {
     ]);
   });
 
-  it("groups short time ranges by day", () => {
+  it("builds daily time ranges with gaps", () => {
     expect(
       buildReportChartData({
         entries,
         grouping: "time",
-        startDate: "2026-06-01",
-        endDate: "2026-06-30",
+        startDate: "2026-06-13",
+        endDate: "2026-06-16",
       }),
-    ).toMatchObject([
-      { label: "2026-06-13", minutes: 120 },
-      { label: "2026-06-14", minutes: 30 },
+    ).toEqual([
+      { label: "2026-06-13", minutes: 120, hours: 2 },
+      { label: "2026-06-14", minutes: 30, hours: 0.5 },
+      { label: "2026-06-15", minutes: 0, hours: 0 },
+      { label: "2026-06-16", minutes: 0, hours: 0 },
     ]);
   });
 });

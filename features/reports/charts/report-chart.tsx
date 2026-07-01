@@ -4,8 +4,6 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  Line,
-  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -24,6 +22,10 @@ type ReportChartProps = {
     label: string;
   }>;
 };
+
+function timeChartWidth(dataPointCount: number) {
+  return Math.max(720, dataPointCount * 32);
+}
 
 export function ReportChart({
   activeGrouping,
@@ -53,44 +55,58 @@ export function ReportChart({
       </div>
 
       {data.length > 0 ? (
-        <div className="h-[300px] min-w-0 overflow-hidden sm:h-[340px]">
-          <ResponsiveContainer height="100%" width="100%">
-            {activeGrouping === "time" ? (
-              <LineChart data={data} margin={{ bottom: 8, left: 0, right: 8, top: 8 }}>
-                <CartesianGrid stroke="#d8e2e8" strokeDasharray="4 4" />
-                <XAxis dataKey="label" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} width={44} />
-                <Tooltip
-                  formatter={(value) => [`${value} h`, "Stunden"]}
-                  labelClassName="text-sm"
-                />
-                <Line
-                  dataKey="hours"
-                  dot={{ r: 3 }}
-                  stroke="#2498ac"
-                  strokeWidth={2}
-                  type="monotone"
-                />
-              </LineChart>
-            ) : (
-              <BarChart
-                data={data.slice(0, 12)}
-                layout="vertical"
-                margin={{ bottom: 8, left: 8, right: 16, top: 8 }}
-              >
-                <CartesianGrid stroke="#d8e2e8" strokeDasharray="4 4" />
-                <XAxis tick={{ fontSize: 12 }} type="number" />
-                <YAxis
-                  dataKey="label"
-                  tick={{ fontSize: 12 }}
-                  type="category"
-                  width={120}
-                />
-                <Tooltip formatter={(value) => [`${value} h`, "Stunden"]} />
-                <Bar dataKey="hours" fill="#2498ac" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            )}
-          </ResponsiveContainer>
+        <div className="h-[300px] min-w-0 overflow-x-auto overflow-y-hidden sm:h-[340px]">
+          <div
+            className="h-full"
+            style={{
+              minWidth:
+                activeGrouping === "time"
+                  ? `${timeChartWidth(data.length)}px`
+                  : undefined,
+            }}
+          >
+            <ResponsiveContainer height="100%" width="100%">
+              {activeGrouping === "time" ? (
+                <BarChart
+                  data={data}
+                  margin={{ bottom: 8, left: 0, right: 8, top: 8 }}
+                >
+                  <CartesianGrid stroke="#d8e2e8" strokeDasharray="4 4" />
+                  <XAxis
+                    dataKey="label"
+                    interval="preserveStartEnd"
+                    tick={{ fontSize: 12 }}
+                    tickFormatter={(value) =>
+                      typeof value === "string" ? value.slice(5) : value
+                    }
+                  />
+                  <YAxis tick={{ fontSize: 12 }} width={44} />
+                  <Tooltip
+                    formatter={(value) => [`${value} h`, "Stunden"]}
+                    labelClassName="text-sm"
+                  />
+                  <Bar dataKey="hours" fill="#2498ac" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              ) : (
+                <BarChart
+                  data={data.slice(0, 12)}
+                  layout="vertical"
+                  margin={{ bottom: 8, left: 8, right: 16, top: 8 }}
+                >
+                  <CartesianGrid stroke="#d8e2e8" strokeDasharray="4 4" />
+                  <XAxis tick={{ fontSize: 12 }} type="number" />
+                  <YAxis
+                    dataKey="label"
+                    tick={{ fontSize: 12 }}
+                    type="category"
+                    width={120}
+                  />
+                  <Tooltip formatter={(value) => [`${value} h`, "Stunden"]} />
+                  <Bar dataKey="hours" fill="#2498ac" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              )}
+            </ResponsiveContainer>
+          </div>
         </div>
       ) : (
         <p className="rounded-md border border-dashed bg-background px-3 py-8 text-center text-sm text-muted-foreground">

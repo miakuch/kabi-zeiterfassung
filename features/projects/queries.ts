@@ -165,6 +165,7 @@ type TaskDetailRow = {
   status: "active" | "inactive";
   default_billable: boolean;
   assignment_mode: "all" | "selected";
+  created_at: string;
   task_assignments: Array<{
     employee_id: string;
   }> | null;
@@ -261,10 +262,11 @@ export async function getProjectDetail(
     admin
       .from("tasks")
       .select(
-        "id, name, description, status, default_billable, assignment_mode, task_assignments(employee_id)",
+        "id, name, description, status, default_billable, assignment_mode, created_at, task_assignments(employee_id)",
       )
       .eq("project_id", projectId)
-      .order("name"),
+      .order("created_at", { ascending: false })
+      .order("name", { ascending: true }),
     admin
       .from("project_member_rates")
       .select("employee_id, hourly_rate")

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, CircleAlert, Plus, Save } from "lucide-react";
 import { StatusTabs } from "@/features/admin/status-tabs";
+import { DeleteTaskButton } from "@/features/projects/delete-task-button";
 import {
   createProject,
   updateProject,
@@ -26,6 +27,10 @@ type ProjectDetailPageProps = {
 
 const errorMessages: Record<string, string> = {
   "aufgabe": "Die Aufgabe konnte nicht gespeichert werden.",
+  "aufgabe-loeschen": "Die Aufgabe konnte nicht gelöscht werden.",
+  "aufgabe-loeschen-verwendet":
+    "Die Aufgabe kann nicht gelöscht werden, weil bereits Zeiten oder Timer-Entwürfe darauf verweisen.",
+  "aufgabe-nicht-gefunden": "Diese Aufgabe wurde nicht gefunden.",
   "aufgabe-vergeben": "Diese Aufgabe existiert in diesem Projekt bereits.",
   "speichern": "Das Projekt konnte nicht gespeichert werden.",
   "stundensatz": "Der Stundensatz konnte nicht gespeichert werden.",
@@ -36,6 +41,7 @@ const successMessages: Record<string, string> = {
   "angelegt": "Projekt wurde angelegt.",
   "aktualisiert": "Projekt wurde aktualisiert.",
   "aufgabe": "Aufgabe wurde gespeichert.",
+  "aufgabe-geloescht": "Aufgabe wurde gelöscht.",
   "stundensatz": "Stundensatz wurde gespeichert.",
 };
 
@@ -59,12 +65,22 @@ export function ProjectDetailPage({
 }: ProjectDetailPageProps) {
   const isEdit = mode === "edit" && project;
   const action = isEdit ? updateProject : createProject;
-  const errorMessage = searchParams.error
+  const isTaskError = searchParams.error?.startsWith("aufgabe") === true;
+  const isTaskSuccess = searchParams.success?.startsWith("aufgabe") === true;
+  const errorMessage = searchParams.error && !isTaskError
     ? errorMessages[searchParams.error]
     : undefined;
-  const successMessage = searchParams.success
+  const successMessage = searchParams.success && !isTaskSuccess
     ? successMessages[searchParams.success]
     : undefined;
+  const taskErrorMessage =
+    searchParams.error && isTaskError
+      ? errorMessages[searchParams.error]
+      : undefined;
+  const taskSuccessMessage =
+    searchParams.success && isTaskSuccess
+      ? successMessages[searchParams.success]
+      : undefined;
   const projectId = project?.id;
   const activeTaskStatus =
     searchParams.taskStatus === "inactive" ? "inactive" : "active";
@@ -279,40 +295,96 @@ export function ProjectDetailPage({
               queryKey="taskStatus"
             />
 
+            {taskErrorMessage ? (
+              <p className="rounded-md border border-destructive/30 bg-background px-3 py-2 text-sm text-destructive">
+                {taskErrorMessage}
+              </p>
+            ) : null}
+
+            {taskSuccessMessage ? (
+              <p className="rounded-md border border-primary/30 bg-accent px-3 py-2 text-sm text-accent-foreground">
+                {taskSuccessMessage}
+              </p>
+            ) : null}
+
             <form
               action={upsertTask}
-              className="grid gap-3 rounded-md border bg-background p-3 lg:grid-cols-[1fr_1fr_140px_150px] lg:items-end"
+              className="grid gap-3 rounded-md border bg-background p-3"
               data-preserve-scroll="true"
             >
               <input name="projectId" type="hidden" value={project.id} />
-              <label className="grid gap-1 text-sm font-medium">
-                Neue Aufgabe
-                <input
-                  className="min-h-11 rounded-md border bg-card px-3 text-base outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/25"
-                  name="name"
-                  required
-                />
-              </label>
-              <label className="grid gap-1 text-sm font-medium">
-                Beschreibung
-                <input
-                  className="min-h-11 rounded-md border bg-card px-3 text-base outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/25"
-                  name="description"
-                />
-              </label>
               <input name="status" type="hidden" value="active" />
-              <input name="assignmentMode" type="hidden" value="selected" />
-              <label className="flex min-h-11 items-center gap-2 text-sm font-medium">
-                <input defaultChecked name="defaultBillable" type="checkbox" value="1" />
-                Abrechenbar
-              </label>
-              <button
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:bg-[#1d7d90]"
-                type="submit"
-              >
-                <Plus className="size-4" aria-hidden="true" />
-                Aufgabe anlegen
-              </button>
+              <div className="grid gap-3 lg:grid-cols-[1fr_1fr_150px_auto] lg:items-end">
+                <label className="grid gap-1 text-sm font-medium">
+                  Neue Aufgabe
+                  <input
+                    className="min-h-11 rounded-md border bg-card px-3 text-base outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/25"
+                    name="name"
+                    required
+                  />
+                </label>
+                <label className="grid gap-1 text-sm font-medium">
+                  Beschreibung
+                  <input
+                    className="min-h-11 rounded-md border bg-card px-3 text-base outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/25"
+                    name="description"
+                  />
+                </label>
+                <label className="grid gap-1 text-sm font-medium">
+                  Freigabe
+                  <select
+                    className="min-h-11 rounded-md border bg-card px-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/25"
+                    defaultValue="all"
+                    name="assignmentMode"
+                  >
+                    <option value="all">Alle</option>
+                    <option value="selected">Ausgewählt</option>
+                  </select>
+                </label>
+                <button
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:bg-[#1d7d90]"
+                  type="submit"
+                >
+                  <Plus className="size-4" aria-hidden="true" />
+                  Aufgabe anlegen
+                </button>
+              </div>
+
+              <div className="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-end">
+                <fieldset className="grid gap-2">
+                  <legend className="text-sm font-medium">
+                    Ausgewählte Mitarbeitende
+                  </legend>
+                  <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                    {options.employees.map((employee) => (
+                      <label
+                        className="flex min-h-10 items-center gap-2 rounded-md border bg-card px-3 text-sm"
+                        key={employee.id}
+                      >
+                        <input
+                          name="assignedEmployeeIds"
+                          type="checkbox"
+                          value={employee.id}
+                        />
+                        <span className="truncate">
+                          {employee.name}
+                          {employee.status === "inactive" ? " (inaktiv)" : ""}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+
+                <label className="flex min-h-11 items-center gap-2 text-sm font-medium">
+                  <input
+                    defaultChecked
+                    name="defaultBillable"
+                    type="checkbox"
+                    value="1"
+                  />
+                  Abrechenbar
+                </label>
+              </div>
             </form>
 
             <div className="grid gap-4">
@@ -432,6 +504,12 @@ export function ProjectDetailPage({
                         <Save className="size-4" aria-hidden="true" />
                         Speichern
                       </button>
+                      <DeleteTaskButton
+                        projectId={project.id}
+                        taskId={task.id}
+                        taskLabel={task.name}
+                        taskStatus={activeTaskStatus}
+                      />
                     </div>
                   </div>
                 </form>

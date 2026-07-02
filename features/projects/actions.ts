@@ -17,6 +17,7 @@ import {
   projectFormSchema,
   projectIdSchema,
   projectStatusSchema,
+  taskIdSchema,
   taskFormSchema,
 } from "./schema";
 
@@ -314,6 +315,97 @@ export async function upsertTask(formData: FormData) {
   revalidatePath(`/projekte/${parsed.data.projectId}`);
   revalidateProjectMasterData();
   redirect(projectDetailPath(parsed.data.projectId, { success: "aufgabe" }));
+}
+
+export async function deleteTask(formData: FormData) {
+  await requireAdminSession();
+
+  const parsedProjectId = projectIdSchema.safeParse(formValue(formData, "projectId"));
+  const parsedTaskId = taskIdSchema.safeParse(formValue(formData, "taskId"));
+  const parsedTaskStatus = projectStatusSchema.safeParse(
+    formValue(formData, "taskStatus") || "active",
+  );
+  const taskStatus = parsedTaskStatus.success ? parsedTaskStatus.data : "active";
+
+  if (!parsedProjectId.success || !parsedTaskId.success) {
+    redirect(
+      projectDetailPath(formValue(formData, "projectId"), {
+        error: "aufgabe-loeschen",
+        taskStatus,
+      }),
+    );
+  }
+
+  const admin = createSupabaseAdminClient();
+  const [
+    { count: timeEntryCount, error: timeEntryError },
+    { count: timerDraftCount, error: timerDraftError },
+  ] = await Promise.all([
+    admin
+      .from("time_entries")
+      .select("id", { count: "exact", head: true })
+      .eq("task_id", parsedTaskId.data),
+    admin
+      .from("timer_drafts")
+      .select("id", { count: "exact", head: true })
+      .eq("task_id", parsedTaskId.data),
+  ]);
+
+  if (timeEntryError || timerDraftError) {
+    redirect(
+      projectDetailPath(parsedProjectId.data, {
+        error: "aufgabe-loeschen",
+        taskStatus,
+      }),
+    );
+  }
+
+  if ((timeEntryCount ?? 0) > 0 || (timerDraftCount ?? 0) > 0) {
+    redirect(
+      projectDetailPath(parsedProjectId.data, {
+        error: "aufgabe-loeschen-verwendet",
+        taskStatus,
+      }),
+    );
+  }
+
+  const { data: deletedTask, error } = await admin
+    .from("tasks")
+    .delete()
+    .eq("id", parsedTaskId.data)
+    .eq("project_id", parsedProjectId.data)
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    redirect(
+      projectDetailPath(parsedProjectId.data, {
+        error: isForeignKeyViolation(error)
+          ? "aufgabe-loeschen-verwendet"
+          : "aufgabe-loeschen",
+        taskStatus,
+      }),
+    );
+  }
+
+  if (!deletedTask) {
+    redirect(
+      projectDetailPath(parsedProjectId.data, {
+        error: "aufgabe-nicht-gefunden",
+        taskStatus,
+      }),
+    );
+  }
+
+  revalidatePath("/projekte");
+  revalidatePath(`/projekte/${parsedProjectId.data}`);
+  revalidateProjectMasterData();
+  redirect(
+    projectDetailPath(parsedProjectId.data, {
+      success: "aufgabe-geloescht",
+      taskStatus,
+    }),
+  );
 }
 
 export async function upsertMemberRate(formData: FormData) {

@@ -8,6 +8,8 @@ import {
   Pencil,
   Plus,
 } from "lucide-react";
+import { StatusTabs } from "@/features/admin/status-tabs";
+import { DeleteProjectButton } from "@/features/projects/delete-project-button";
 import {
   getProjectOverview,
   type ProjectOverviewItem,
@@ -217,10 +219,39 @@ function ProjectMetric({
   );
 }
 
-export default async function ProjectsPage() {
+type ProjectsPageProps = {
+  searchParams: Promise<{
+    error?: string;
+    status?: string;
+    success?: string;
+  }>;
+};
+
+const errorMessages: Record<string, string> = {
+  "loeschen": "Das Projekt konnte nicht gelöscht werden.",
+  "loeschen-verwendet":
+    "Das Projekt kann nicht gelöscht werden, weil bereits Zeiten oder Timer-Entwürfe darauf verweisen.",
+  "nicht-gefunden": "Dieses Projekt wurde nicht gefunden.",
+  "ungueltige-eingabe": "Bitte prüfe die Eingaben.",
+};
+
+const successMessages: Record<string, string> = {
+  "geloescht": "Projekt wurde gelöscht.",
+};
+
+export default async function ProjectsPage({ searchParams }: ProjectsPageProps) {
   await requireAdminSession();
-  const projects = await getProjectOverview();
+  const [projects, params] = await Promise.all([
+    getProjectOverview(),
+    searchParams,
+  ]);
+  const activeStatus = params.status === "inactive" ? "inactive" : "active";
   const activeProjects = projects.filter((project) => project.status === "active");
+  const inactiveProjects = projects.filter(
+    (project) => project.status === "inactive",
+  );
+  const visibleProjects =
+    activeStatus === "active" ? activeProjects : inactiveProjects;
   const budgetAttentionCount = projects.filter(
     (project) =>
       project.budgetStatus === "warning-80" ||
@@ -230,6 +261,10 @@ export default async function ProjectsPage() {
     (total, project) => total + project.activeTaskCount,
     0,
   );
+  const errorMessage = params.error ? errorMessages[params.error] : undefined;
+  const successMessage = params.success
+    ? successMessages[params.success]
+    : undefined;
 
   return (
     <section className="grid gap-6">
@@ -272,22 +307,49 @@ export default async function ProjectsPage() {
         />
       </div>
 
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <StatusTabs
+          activeCount={activeProjects.length}
+          activeStatus={activeStatus}
+          basePath="/projekte"
+          inactiveCount={inactiveProjects.length}
+        />
+      </div>
+
+      {errorMessage ? (
+        <p className="rounded-md border border-destructive/30 bg-card px-3 py-2 text-sm text-destructive">
+          {errorMessage}
+        </p>
+      ) : null}
+
+      {successMessage ? (
+        <p className="rounded-md border border-primary/30 bg-accent px-3 py-2 text-sm text-accent-foreground">
+          {successMessage}
+        </p>
+      ) : null}
+
       {projects.length === 0 ? (
         <div className="rounded-md border bg-card px-4 py-8 text-sm text-muted-foreground">
           Noch keine Projekte angelegt.
         </div>
+      ) : visibleProjects.length === 0 ? (
+        <div className="rounded-md border bg-card px-4 py-8 text-sm text-muted-foreground">
+          {activeStatus === "active"
+            ? "Keine aktiven Projekte vorhanden."
+            : "Keine inaktiven Projekte vorhanden."}
+        </div>
       ) : (
         <div className="grid gap-3">
-          <div className="hidden grid-cols-[minmax(260px,1.45fr)_minmax(150px,0.9fr)_minmax(180px,1fr)_minmax(140px,0.8fr)_minmax(140px,0.8fr)_52px] gap-4 px-4 text-xs font-semibold uppercase text-muted-foreground xl:grid">
+          <div className="hidden grid-cols-[minmax(260px,1.45fr)_minmax(150px,0.9fr)_minmax(180px,1fr)_minmax(140px,0.8fr)_minmax(140px,0.8fr)_96px] gap-4 px-4 text-xs font-semibold uppercase text-muted-foreground xl:grid">
             <span>Projekt</span>
             <span>Kunde</span>
             <span>Budget</span>
             <span>Verbrauch</span>
             <span>Offen</span>
-            <span className="text-right">Aktion</span>
+            <span className="text-right">Aktionen</span>
           </div>
 
-          {projects.map((project) => {
+          {visibleProjects.map((project) => {
             const leadingPercent = leadingBudgetPercent(project);
             const projectLabel = project.code
               ? `${project.code} - ${project.name}`
@@ -296,7 +358,7 @@ export default async function ProjectsPage() {
 
             return (
               <article
-                className="grid gap-4 rounded-md border bg-card p-4 xl:grid-cols-[minmax(260px,1.45fr)_minmax(150px,0.9fr)_minmax(180px,1fr)_minmax(140px,0.8fr)_minmax(140px,0.8fr)_52px] xl:items-center"
+                className="grid gap-4 rounded-md border bg-card p-4 xl:grid-cols-[minmax(260px,1.45fr)_minmax(150px,0.9fr)_minmax(180px,1fr)_minmax(140px,0.8fr)_minmax(140px,0.8fr)_96px] xl:items-center"
                 key={project.id}
               >
                 <div className="min-w-0">
@@ -370,7 +432,7 @@ export default async function ProjectsPage() {
                   amount={formatMoney(project.remainingAmount)}
                 />
 
-                <div className="flex justify-end xl:justify-center">
+                <div className="flex justify-end gap-2 xl:justify-center">
                   <Link
                     aria-label={`Projekt bearbeiten: ${projectLabel}`}
                     className="inline-flex size-11 items-center justify-center rounded-md border bg-background text-muted-foreground transition hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -379,6 +441,11 @@ export default async function ProjectsPage() {
                   >
                     <Pencil className="size-4" aria-hidden="true" />
                   </Link>
+                  <DeleteProjectButton
+                    listStatus={activeStatus}
+                    projectId={project.id}
+                    projectLabel={projectLabel}
+                  />
                 </div>
               </article>
             );

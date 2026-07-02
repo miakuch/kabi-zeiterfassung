@@ -6,6 +6,7 @@ import {
   Save,
   X,
 } from "lucide-react";
+import { StatusTabs } from "@/features/admin/status-tabs";
 import {
   activateCustomer,
   createCustomer,
@@ -19,6 +20,7 @@ type CustomersPageProps = {
   searchParams: Promise<{
     deactivate?: string;
     error?: string;
+    status?: string;
     success?: string;
     warning?: string;
   }>;
@@ -59,6 +61,15 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
 
   const params = await searchParams;
   const customers = await getCustomers();
+  const activeStatus = params.status === "inactive" ? "inactive" : "active";
+  const activeCustomers = customers.filter(
+    (customer) => customer.status === "active",
+  );
+  const inactiveCustomers = customers.filter(
+    (customer) => customer.status === "inactive",
+  );
+  const visibleCustomers =
+    activeStatus === "active" ? activeCustomers : inactiveCustomers;
 
   const errorMessage = params.error ? errorMessages[params.error] : undefined;
   const successMessage = params.success
@@ -108,6 +119,13 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
         </p>
       ) : null}
 
+      <StatusTabs
+        activeCount={activeCustomers.length}
+        activeStatus={activeStatus}
+        basePath="/kunden"
+        inactiveCount={inactiveCustomers.length}
+      />
+
       <div className="overflow-hidden rounded-md border bg-card">
         <div className="grid grid-cols-[minmax(180px,1fr)_120px_130px_150px] gap-3 border-b bg-secondary px-4 py-3 text-xs font-semibold uppercase text-muted-foreground max-lg:hidden">
           <span>Name</span>
@@ -120,10 +138,16 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
           <div className="px-4 py-8 text-sm text-muted-foreground">
             Noch keine Kunden angelegt.
           </div>
+        ) : visibleCustomers.length === 0 ? (
+          <div className="px-4 py-8 text-sm text-muted-foreground">
+            {activeStatus === "active"
+              ? "Keine aktiven Kunden vorhanden."
+              : "Keine inaktiven Kunden vorhanden."}
+          </div>
         ) : null}
 
         <div className="divide-y">
-          {customers.map((customer) => {
+          {visibleCustomers.map((customer) => {
             const showDeactivateWarning =
               params.deactivate === customer.id &&
               params.warning === "aktive-projekte";
@@ -133,6 +157,7 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
                 <form
                   action={updateCustomer}
                   className="grid gap-3 px-4 py-4 lg:grid-cols-[minmax(180px,1fr)_120px_130px_150px] lg:items-end"
+                  data-preserve-scroll="true"
                 >
                   <input name="id" type="hidden" value={customer.id} />
 
@@ -187,7 +212,7 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
 
                 <div className="flex flex-wrap justify-start gap-2 px-4 pb-4 lg:justify-end">
                   {customer.status === "active" ? (
-                    <form action={deactivateCustomer}>
+                    <form action={deactivateCustomer} data-preserve-scroll="true">
                       <input name="id" type="hidden" value={customer.id} />
                       <button
                         className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border bg-background px-3 text-sm font-medium text-muted-foreground transition hover:bg-secondary hover:text-secondary-foreground"
@@ -198,7 +223,7 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
                       </button>
                     </form>
                   ) : (
-                    <form action={activateCustomer}>
+                    <form action={activateCustomer} data-preserve-scroll="true">
                       <input name="id" type="hidden" value={customer.id} />
                       <button
                         className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border bg-background px-3 text-sm font-medium text-muted-foreground transition hover:bg-secondary hover:text-secondary-foreground"
@@ -223,7 +248,10 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
                         bleiben unverändert.
                       </p>
                       <div className="flex flex-wrap gap-2">
-                        <form action={deactivateCustomer}>
+                        <form
+                          action={deactivateCustomer}
+                          data-preserve-scroll="true"
+                        >
                           <input name="id" type="hidden" value={customer.id} />
                           <input name="confirmed" type="hidden" value="1" />
                           <button

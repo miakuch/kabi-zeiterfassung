@@ -1,4 +1,5 @@
 import { Plus, RotateCcw, Save, UserX } from "lucide-react";
+import { StatusTabs } from "@/features/admin/status-tabs";
 import {
   activateEmployee,
   createEmployee,
@@ -14,6 +15,7 @@ import { requireAdminSession } from "@/lib/auth/require-session";
 type EmployeesPageProps = {
   searchParams: Promise<{
     error?: string;
+    status?: string;
     success?: string;
   }>;
 };
@@ -71,6 +73,15 @@ export default async function EmployeesPage({
   const successMessage = params.success
     ? successMessages[params.success]
     : undefined;
+  const activeStatus = params.status === "inactive" ? "inactive" : "active";
+  const activeEmployees = employees.filter(
+    (employee) => employee.status === "active",
+  );
+  const inactiveEmployees = employees.filter(
+    (employee) => employee.status === "inactive",
+  );
+  const visibleEmployees =
+    activeStatus === "active" ? activeEmployees : inactiveEmployees;
 
   return (
     <section className="grid gap-6">
@@ -141,6 +152,13 @@ export default async function EmployeesPage({
         </p>
       ) : null}
 
+      <StatusTabs
+        activeCount={activeEmployees.length}
+        activeStatus={activeStatus}
+        basePath="/mitarbeitende"
+        inactiveCount={inactiveEmployees.length}
+      />
+
       <div className="overflow-hidden rounded-md border bg-card">
         <div className="grid grid-cols-[minmax(170px,1fr)_minmax(220px,1.2fr)_140px_120px_150px] gap-3 border-b bg-secondary px-4 py-3 text-xs font-semibold uppercase text-muted-foreground max-xl:hidden">
           <span>Name</span>
@@ -154,10 +172,16 @@ export default async function EmployeesPage({
           <div className="px-4 py-8 text-sm text-muted-foreground">
             Noch keine Mitarbeitenden angelegt.
           </div>
+        ) : visibleEmployees.length === 0 ? (
+          <div className="px-4 py-8 text-sm text-muted-foreground">
+            {activeStatus === "active"
+              ? "Keine aktiven Mitarbeitenden vorhanden."
+              : "Keine inaktiven Mitarbeitenden vorhanden."}
+          </div>
         ) : null}
 
         <div className="divide-y">
-          {employees.map((employee) => {
+          {visibleEmployees.map((employee) => {
             const isCurrentEmployee = employee.id === currentEmployee.id;
             const isLastActiveAdmin =
               employee.role === "admin" &&
@@ -169,6 +193,7 @@ export default async function EmployeesPage({
                 <form
                   action={updateEmployee}
                   className="grid gap-3 px-4 py-4 xl:grid-cols-[minmax(170px,1fr)_minmax(220px,1.2fr)_140px_120px_150px] xl:items-end"
+                  data-preserve-scroll="true"
                 >
                   <input name="id" type="hidden" value={employee.id} />
 
@@ -256,7 +281,7 @@ export default async function EmployeesPage({
 
                 <div className="flex flex-wrap justify-start gap-2 px-4 pb-4 xl:justify-end">
                   {employee.status === "active" ? (
-                    <form action={deactivateEmployee}>
+                    <form action={deactivateEmployee} data-preserve-scroll="true">
                       <input name="id" type="hidden" value={employee.id} />
                       <button
                         className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border bg-background px-3 text-sm font-medium text-muted-foreground transition hover:bg-secondary hover:text-secondary-foreground disabled:cursor-not-allowed disabled:opacity-50"
@@ -273,7 +298,7 @@ export default async function EmployeesPage({
                       </button>
                     </form>
                   ) : (
-                    <form action={activateEmployee}>
+                    <form action={activateEmployee} data-preserve-scroll="true">
                       <input name="id" type="hidden" value={employee.id} />
                       <button
                         className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border bg-background px-3 text-sm font-medium text-muted-foreground transition hover:bg-secondary hover:text-secondary-foreground"

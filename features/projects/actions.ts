@@ -16,13 +16,23 @@ import {
   memberRateFormSchema,
   projectFormSchema,
   projectIdSchema,
+  projectStatusSchema,
   taskFormSchema,
 } from "./schema";
 
-function projectsPath(params: Record<string, string>) {
+function projectsPath(
+  params: Record<string, string>,
+  listStatus: "active" | "inactive" = "active",
+) {
   const searchParams = new URLSearchParams(params);
 
-  return `/projekte?${searchParams.toString()}`;
+  if (listStatus === "inactive") {
+    searchParams.set("status", "inactive");
+  }
+
+  const query = searchParams.toString();
+
+  return query ? `/projekte?${query}` : "/projekte";
 }
 
 function projectDetailPath(projectId: string, params?: Record<string, string>) {
@@ -43,6 +53,10 @@ function newProjectPath(params: Record<string, string>) {
 
 function isUniqueViolation(error: { code?: string }) {
   return error.code === "23505";
+}
+
+function isForeignKeyViolation(error: { code?: string }) {
+  return error.code === "23503";
 }
 
 function revalidateProjectMasterData() {
@@ -152,6 +166,84 @@ export async function updateProject(formData: FormData) {
   revalidatePath(`/projekte/${parsedId.data}`);
   revalidateProjectMasterData();
   redirect(projectDetailPath(parsedId.data, { success: "aktualisiert" }));
+}
+
+export async function deleteProject(formData: FormData) {
+  await requireAdminSession();
+
+  const parsedId = projectIdSchema.safeParse(formValue(formData, "projectId"));
+  const parsedListStatus = projectStatusSchema.safeParse(
+    formValue(formData, "listStatus") || "active",
+  );
+  const listStatus = parsedListStatus.success ? parsedListStatus.data : "active";
+
+  if (!parsedId.success) {
+    redirect(projectsPath({ error: "ungueltige-eingabe" }, listStatus));
+  }
+
+  const admin = createSupabaseAdminClient();
+  const { data: tasksData, error: tasksError } = await admin
+    .from("tasks")
+    .select("id")
+    .eq("project_id", parsedId.data);
+
+  if (tasksError) {
+    redirect(projectsPath({ error: "loeschen" }, listStatus));
+  }
+
+  const taskIds = ((tasksData ?? []) as Array<{ id: string }>).map(
+    (task) => task.id,
+  );
+
+  if (taskIds.length > 0) {
+    const [
+      { count: timeEntryCount, error: timeEntryError },
+      { count: timerDraftCount, error: timerDraftError },
+    ] = await Promise.all([
+      admin
+        .from("time_entries")
+        .select("id", { count: "exact", head: true })
+        .in("task_id", taskIds),
+      admin
+        .from("timer_drafts")
+        .select("id", { count: "exact", head: true })
+        .in("task_id", taskIds),
+    ]);
+
+    if (timeEntryError || timerDraftError) {
+      redirect(projectsPath({ error: "loeschen" }, listStatus));
+    }
+
+    if ((timeEntryCount ?? 0) > 0 || (timerDraftCount ?? 0) > 0) {
+      redirect(projectsPath({ error: "loeschen-verwendet" }, listStatus));
+    }
+  }
+
+  const { data: deletedProject, error } = await admin
+    .from("projects")
+    .delete()
+    .eq("id", parsedId.data)
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    redirect(
+      projectsPath(
+        {
+          error: isForeignKeyViolation(error) ? "loeschen-verwendet" : "loeschen",
+        },
+        listStatus,
+      ),
+    );
+  }
+
+  if (!deletedProject) {
+    redirect(projectsPath({ error: "nicht-gefunden" }, listStatus));
+  }
+
+  revalidatePath("/projekte");
+  revalidateProjectMasterData();
+  redirect(projectsPath({ success: "geloescht" }, listStatus));
 }
 
 export async function upsertTask(formData: FormData) {

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowLeft, CircleAlert, Plus, Save } from "lucide-react";
+import { StatusTabs } from "@/features/admin/status-tabs";
 import {
   createProject,
   updateProject,
@@ -19,6 +20,7 @@ type ProjectDetailPageProps = {
   searchParams: {
     error?: string;
     success?: string;
+    taskStatus?: string;
   };
 };
 
@@ -64,6 +66,14 @@ export function ProjectDetailPage({
     ? successMessages[searchParams.success]
     : undefined;
   const projectId = project?.id;
+  const activeTaskStatus =
+    searchParams.taskStatus === "inactive" ? "inactive" : "active";
+  const activeTasks =
+    project?.tasks.filter((task) => task.status === "active") ?? [];
+  const inactiveTasks =
+    project?.tasks.filter((task) => task.status === "inactive") ?? [];
+  const visibleTasks =
+    activeTaskStatus === "active" ? activeTasks : inactiveTasks;
   const ratesByEmployee = new Map(
     (project?.memberRates ?? []).map((rate) => [rate.employeeId, rate.hourlyRate]),
   );
@@ -100,7 +110,11 @@ export function ProjectDetailPage({
         </p>
       ) : null}
 
-      <form action={action} className="grid gap-5 rounded-md border bg-card p-5">
+      <form
+        action={action}
+        className="grid gap-5 rounded-md border bg-card p-5"
+        data-preserve-scroll="true"
+      >
         {projectId ? <input name="projectId" type="hidden" value={projectId} /> : null}
 
         <div className="grid gap-4 lg:grid-cols-2">
@@ -257,9 +271,18 @@ export function ProjectDetailPage({
               </p>
             </div>
 
+            <StatusTabs
+              activeCount={activeTasks.length}
+              activeStatus={activeTaskStatus}
+              basePath={`/projekte/${project.id}`}
+              inactiveCount={inactiveTasks.length}
+              queryKey="taskStatus"
+            />
+
             <form
               action={upsertTask}
               className="grid gap-3 rounded-md border bg-background p-3 lg:grid-cols-[1fr_1fr_140px_150px] lg:items-end"
+              data-preserve-scroll="true"
             >
               <input name="projectId" type="hidden" value={project.id} />
               <label className="grid gap-1 text-sm font-medium">
@@ -297,12 +320,19 @@ export function ProjectDetailPage({
                 <p className="text-sm text-muted-foreground">
                   Noch keine Aufgaben angelegt.
                 </p>
+              ) : visibleTasks.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  {activeTaskStatus === "active"
+                    ? "Keine aktiven Aufgaben vorhanden."
+                    : "Keine inaktiven Aufgaben vorhanden."}
+                </p>
               ) : null}
 
-              {project.tasks.map((task) => (
+              {visibleTasks.map((task) => (
                 <form
                   action={upsertTask}
                   className="grid gap-3 rounded-md border bg-background p-3"
+                  data-preserve-scroll="true"
                   key={task.id}
                 >
                   <input name="projectId" type="hidden" value={project.id} />

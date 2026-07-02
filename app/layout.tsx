@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
+import { ScrollPositionRestorer } from "@/components/scroll-position-restorer";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -13,7 +15,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="de">
-      <body>{children}</body>
+      <body>
+        <Suspense fallback={null}>
+          <ScrollPositionRestorer />
+        </Suspense>
+        {children}
+      </body>
     </html>
   );
 }

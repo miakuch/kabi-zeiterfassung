@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowLeft, CircleAlert, Plus, Save } from "lucide-react";
+import { FlashMessage } from "@/components/flash-message";
 import { StatusTabs } from "@/features/admin/status-tabs";
 import { DeleteTaskButton } from "@/features/projects/delete-task-button";
 import { TaskAssignmentFields } from "@/features/projects/task-assignment-fields";
@@ -126,6 +127,8 @@ export function ProjectDetailPage({
           {successMessage}
         </p>
       ) : null}
+
+      {taskErrorMessage ? <FlashMessage message={taskErrorMessage} /> : null}
 
       <form
         action={action}
@@ -295,12 +298,6 @@ export function ProjectDetailPage({
               inactiveCount={inactiveTasks.length}
               queryKey="taskStatus"
             />
-
-            {taskErrorMessage ? (
-              <p className="rounded-md border border-destructive/30 bg-background px-3 py-2 text-sm text-destructive">
-                {taskErrorMessage}
-              </p>
-            ) : null}
 
             {taskSuccessMessage ? (
               <p className="rounded-md border border-primary/30 bg-accent px-3 py-2 text-sm text-accent-foreground">

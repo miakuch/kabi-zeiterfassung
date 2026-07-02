@@ -6,6 +6,7 @@ import {
   Save,
   X,
 } from "lucide-react";
+import { FlashMessage } from "@/components/flash-message";
 import { StatusTabs } from "@/features/admin/status-tabs";
 import {
   activateCustomer,
@@ -107,11 +108,7 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
         </form>
       </div>
 
-      {errorMessage ? (
-        <p className="rounded-md border border-destructive/30 bg-card px-3 py-2 text-sm text-destructive">
-          {errorMessage}
-        </p>
-      ) : null}
+      {errorMessage ? <FlashMessage message={errorMessage} /> : null}
 
       {successMessage ? (
         <p className="rounded-md border border-primary/30 bg-accent px-3 py-2 text-sm text-accent-foreground">

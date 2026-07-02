@@ -1,15 +1,12 @@
 import Link from "next/link";
-import { ArrowLeft, CircleAlert, Plus, Save } from "lucide-react";
+import { ArrowLeft, Plus } from "lucide-react";
 import { FlashMessage } from "@/components/flash-message";
 import { StatusTabs } from "@/features/admin/status-tabs";
-import { DeleteTaskButton } from "@/features/projects/delete-task-button";
+import { MemberRateForm } from "@/features/projects/member-rate-form";
+import { ProjectMasterForm } from "@/features/projects/project-master-form";
+import { TaskEditForm } from "@/features/projects/task-edit-form";
 import { TaskAssignmentFields } from "@/features/projects/task-assignment-fields";
-import {
-  createProject,
-  updateProject,
-  upsertMemberRate,
-  upsertTask,
-} from "./actions";
+import { upsertTask } from "./actions";
 import {
   type ProjectDetail,
   type ProjectDetailOptions,
@@ -66,7 +63,6 @@ export function ProjectDetailPage({
   searchParams,
 }: ProjectDetailPageProps) {
   const isEdit = mode === "edit" && project;
-  const action = isEdit ? updateProject : createProject;
   const isTaskError = searchParams.error?.startsWith("aufgabe") === true;
   const isTaskSuccess = searchParams.success?.startsWith("aufgabe") === true;
   const errorMessage = searchParams.error && !isTaskError
@@ -83,7 +79,6 @@ export function ProjectDetailPage({
     searchParams.success && isTaskSuccess
       ? successMessages[searchParams.success]
       : undefined;
-  const projectId = project?.id;
   const activeTaskStatus =
     searchParams.taskStatus === "inactive" ? "inactive" : "active";
   const activeTasks =
@@ -130,156 +125,7 @@ export function ProjectDetailPage({
 
       {taskErrorMessage ? <FlashMessage message={taskErrorMessage} /> : null}
 
-      <form
-        action={action}
-        className="grid gap-5 rounded-md border bg-card p-5"
-        data-preserve-scroll="true"
-      >
-        {projectId ? <input name="projectId" type="hidden" value={projectId} /> : null}
-
-        <div className="grid gap-4 lg:grid-cols-2">
-          <label className="grid gap-1 text-sm font-medium">
-            Kunde
-            <select
-              className="min-h-11 rounded-md border bg-background px-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/25"
-              defaultValue={project?.customerId ?? ""}
-              name="customerId"
-              required
-            >
-              <option value="" disabled>
-                Kunde wählen
-              </option>
-              {options.customers.map((customer) => (
-                <option key={customer.id} value={customer.id}>
-                  {customer.name}
-                  {customer.status === "inactive" ? " (inaktiv)" : ""}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="grid gap-1 text-sm font-medium">
-            Projektname
-            <input
-              className="min-h-11 rounded-md border bg-background px-3 text-base outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/25"
-              defaultValue={project?.name ?? ""}
-              maxLength={160}
-              name="name"
-              required
-            />
-          </label>
-
-          <label className="grid gap-1 text-sm font-medium">
-            Projektkennung
-            <input
-              className="min-h-11 rounded-md border bg-background px-3 text-base outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/25"
-              defaultValue={project?.code ?? ""}
-              name="code"
-            />
-          </label>
-
-          <div className="grid gap-4 sm:grid-cols-[1fr_110px]">
-            <label className="grid gap-1 text-sm font-medium">
-              Status
-              <select
-                className="min-h-11 rounded-md border bg-background px-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/25"
-                defaultValue={project?.status ?? "active"}
-                name="status"
-              >
-                <option value="active">Aktiv</option>
-                <option value="inactive">Inaktiv</option>
-              </select>
-            </label>
-
-            <label className="grid gap-1 text-sm font-medium">
-              Farbe
-              <input
-                className="min-h-11 rounded-md border bg-background px-2"
-                defaultValue={project?.color ?? "#2498ac"}
-                name="color"
-                type="color"
-              />
-            </label>
-          </div>
-        </div>
-
-        <div className="grid gap-4 lg:grid-cols-4">
-          <label className="grid gap-1 text-sm font-medium">
-            Stundenbudget
-            <input
-              className="min-h-11 rounded-md border bg-background px-3 text-base outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/25"
-              defaultValue={inputValue(project?.hourlyBudget ?? null)}
-              min="0"
-              name="hourlyBudget"
-              step="0.01"
-              type="number"
-            />
-          </label>
-
-          <label className="grid gap-1 text-sm font-medium">
-            Betragsbudget
-            <input
-              className="min-h-11 rounded-md border bg-background px-3 text-base outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/25"
-              defaultValue={inputValue(project?.amountBudget ?? null)}
-              min="0"
-              name="amountBudget"
-              step="0.01"
-              type="number"
-            />
-          </label>
-
-          <label className="grid gap-1 text-sm font-medium">
-            Budgetbasis
-            <select
-              className="min-h-11 rounded-md border bg-background px-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/25"
-              defaultValue={project?.budgetAlertBasis ?? ""}
-              name="budgetAlertBasis"
-            >
-              <option value="">Automatisch</option>
-              <option value="hours">Stunden</option>
-              <option value="amount">Betrag</option>
-            </select>
-          </label>
-
-          <label className="grid gap-1 text-sm font-medium">
-            Standardstundensatz
-            <input
-              className="min-h-11 rounded-md border bg-background px-3 text-base outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/25"
-              defaultValue={inputValue(project?.defaultHourlyRate ?? null)}
-              min="0"
-              name="defaultHourlyRate"
-              step="0.01"
-              type="number"
-            />
-          </label>
-        </div>
-
-        {!isEdit ? (
-          <label className="flex items-start gap-3 rounded-md border bg-background px-3 py-3 text-sm">
-            <input
-              className="mt-1"
-              defaultChecked
-              name="createGeneralTask"
-              type="checkbox"
-              value="1"
-            />
-            <span>
-              Standardaufgabe Allgemein anlegen. Die Aufgabe wird nicht
-              automatisch für alle freigegeben.
-            </span>
-          </label>
-        ) : null}
-
-        <div className="flex justify-end">
-          <button
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:bg-[#1d7d90]"
-            type="submit"
-          >
-            <Save className="size-4" aria-hidden="true" />
-            Projekt speichern
-          </button>
-        </div>
-      </form>
+      <ProjectMasterForm mode={mode} options={options} project={project} />
 
       {isEdit ? (
         <>
@@ -368,85 +214,14 @@ export function ProjectDetailPage({
               ) : null}
 
               {visibleTasks.map((task) => (
-                <form
-                  action={upsertTask}
-                  className="grid gap-3 rounded-md border bg-background p-3"
-                  data-preserve-scroll="true"
+                <TaskEditForm
+                  activeTaskStatus={activeTaskStatus}
+                  hasNoBookableEmployees={hasNoBookableEmployees(task)}
                   key={task.id}
-                >
-                  <input name="projectId" type="hidden" value={project.id} />
-                  <input name="taskId" type="hidden" value={task.id} />
-
-                  {hasNoBookableEmployees(task) ? (
-                    <p className="flex gap-2 rounded-md bg-[#fff8e6] px-3 py-2 text-sm text-[#6f4f00]">
-                      <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-                      Diese aktive Aufgabe ist für niemanden buchbar.
-                    </p>
-                  ) : null}
-
-                  <div className="grid gap-3 lg:grid-cols-[1fr_1fr_140px_150px]">
-                    <label className="grid gap-1 text-sm font-medium">
-                      Aufgabe
-                      <input
-                        className="min-h-11 rounded-md border bg-card px-3 text-base outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/25"
-                        defaultValue={task.name}
-                        name="name"
-                        required
-                      />
-                    </label>
-                    <label className="grid gap-1 text-sm font-medium">
-                      Beschreibung
-                      <input
-                        className="min-h-11 rounded-md border bg-card px-3 text-base outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/25"
-                        defaultValue={task.description ?? ""}
-                        name="description"
-                      />
-                    </label>
-                    <label className="grid gap-1 text-sm font-medium">
-                      Status
-                      <select
-                        className="min-h-11 rounded-md border bg-card px-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/25"
-                        defaultValue={task.status}
-                        name="status"
-                      >
-                        <option value="active">Aktiv</option>
-                        <option value="inactive">Inaktiv</option>
-                      </select>
-                    </label>
-                    <TaskAssignmentFields
-                      defaultMode={task.assignmentMode}
-                      defaultSelectedEmployeeIds={task.assignedEmployeeIds}
-                      employees={options.employees}
-                    />
-                  </div>
-
-                  <div className="flex justify-end">
-                    <div className="flex flex-wrap items-center justify-end gap-3">
-                      <label className="flex min-h-11 items-center gap-2 text-sm font-medium">
-                        <input
-                          defaultChecked={task.defaultBillable}
-                          name="defaultBillable"
-                          type="checkbox"
-                          value="1"
-                        />
-                        Abrechenbar
-                      </label>
-                      <button
-                        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border bg-card px-4 text-sm font-medium transition hover:bg-secondary"
-                        type="submit"
-                      >
-                        <Save className="size-4" aria-hidden="true" />
-                        Speichern
-                      </button>
-                      <DeleteTaskButton
-                        projectId={project.id}
-                        taskId={task.id}
-                        taskLabel={task.name}
-                        taskStatus={activeTaskStatus}
-                      />
-                    </div>
-                  </div>
-                </form>
+                  options={options}
+                  projectId={project.id}
+                  task={task}
+                />
               ))}
             </div>
           </section>
@@ -463,32 +238,13 @@ export function ProjectDetailPage({
 
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
               {options.employees.map((employee) => (
-                <form
-                  action={upsertMemberRate}
-                  className="grid gap-2 rounded-md border bg-background p-3"
+                <MemberRateForm
+                  employeeId={employee.id}
+                  employeeName={employee.name}
+                  hourlyRate={inputValue(ratesByEmployee.get(employee.id) ?? null)}
                   key={employee.id}
-                >
-                  <input name="projectId" type="hidden" value={project.id} />
-                  <input name="employeeId" type="hidden" value={employee.id} />
-                  <label className="grid gap-1 text-sm font-medium">
-                    {employee.name}
-                    <input
-                      className="min-h-11 rounded-md border bg-card px-3 text-base outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/25"
-                      defaultValue={inputValue(ratesByEmployee.get(employee.id) ?? null)}
-                      min="0"
-                      name="hourlyRate"
-                      step="0.01"
-                      type="number"
-                    />
-                  </label>
-                  <button
-                    className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border bg-card px-3 text-sm font-medium transition hover:bg-secondary"
-                    type="submit"
-                  >
-                    <Save className="size-4" aria-hidden="true" />
-                    Speichern
-                  </button>
-                </form>
+                  projectId={project.id}
+                />
               ))}
             </div>
           </section>

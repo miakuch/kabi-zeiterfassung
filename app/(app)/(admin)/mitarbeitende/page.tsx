@@ -85,7 +85,7 @@ export default async function EmployeesPage({
       />
 
       <div className="overflow-hidden rounded-md border bg-card">
-        <div className="grid grid-cols-[minmax(150px,1fr)_minmax(210px,1.15fr)_150px_115px_minmax(220px,auto)] gap-3 border-b bg-secondary px-4 py-3 text-xs font-semibold uppercase text-muted-foreground max-xl:hidden">
+        <div className="grid grid-cols-[minmax(150px,1fr)_minmax(210px,1.15fr)_150px_115px_96px] gap-3 border-b bg-secondary px-4 py-3 text-xs font-semibold uppercase text-muted-foreground max-xl:hidden">
           <span>Name</span>
           <span>E-Mail</span>
           <span>Rolle</span>

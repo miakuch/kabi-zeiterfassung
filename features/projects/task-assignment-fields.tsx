@@ -16,6 +16,10 @@ type TaskAssignmentFieldsProps = {
   employees: EmployeeOption[];
   defaultMode?: AssignmentMode;
   defaultSelectedEmployeeIds?: string[];
+  onSelectionChange?: (selection: {
+    assignmentMode: AssignmentMode;
+    selectedEmployeeIds: string[];
+  }) => void;
 };
 
 function selectionSummary({
@@ -49,6 +53,7 @@ export function TaskAssignmentFields({
   employees,
   defaultMode = "all",
   defaultSelectedEmployeeIds = [],
+  onSelectionChange,
 }: TaskAssignmentFieldsProps) {
   const initialSelectedEmployeeIds =
     defaultMode === "selected" ? defaultSelectedEmployeeIds : [];
@@ -59,6 +64,13 @@ export function TaskAssignmentFields({
   const containerRef = useRef<HTMLDivElement>(null);
   const assignmentMode: AssignmentMode =
     selectedEmployeeIds.length > 0 ? "selected" : "all";
+
+  useEffect(() => {
+    onSelectionChange?.({
+      assignmentMode,
+      selectedEmployeeIds,
+    });
+  }, [assignmentMode, onSelectionChange, selectedEmployeeIds]);
 
   useEffect(() => {
     if (!isOpen) {

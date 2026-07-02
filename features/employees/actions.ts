@@ -7,6 +7,7 @@ import {
   CACHE_TAG_PROJECT_DETAIL_OPTIONS,
   CACHE_TAG_REPORT_FILTER_OPTIONS,
 } from "@/lib/cache/tags";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { wouldRemoveLastActiveAdmin } from "./domain";
 import {
@@ -35,9 +36,78 @@ function isUniqueViolation(error: { code?: string }) {
   return error.code === "23505";
 }
 
+function isAuthEmailConflict(error: { code?: string; message?: string }) {
+  return (
+    error.code === "email_exists" ||
+    error.code === "user_already_exists" ||
+    error.message?.toLowerCase().includes("email") === true
+  );
+}
+
 function revalidateEmployeeMasterData() {
   updateTag(CACHE_TAG_PROJECT_DETAIL_OPTIONS);
   updateTag(CACHE_TAG_REPORT_FILTER_OPTIONS);
+}
+
+async function getEmployeeAuthState(employeeId: string) {
+  const admin = createSupabaseAdminClient();
+  const { data, error } = await admin
+    .from("employees")
+    .select("id, email, auth_user_id")
+    .eq("id", employeeId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error("Mitarbeitendenprofil konnte nicht geladen werden.");
+  }
+
+  return data as
+    | { id: string; email: string; auth_user_id: string | null }
+    | null;
+}
+
+async function updateLinkedAuthEmail({
+  authUserId,
+  previousEmail,
+  nextEmail,
+}: {
+  authUserId: string | null;
+  previousEmail: string;
+  nextEmail: string;
+}) {
+  if (!authUserId || previousEmail.toLowerCase() === nextEmail.toLowerCase()) {
+    return;
+  }
+
+  const admin = createSupabaseAdminClient();
+  const { error } = await admin.auth.admin.updateUserById(authUserId, {
+    email: nextEmail,
+    email_confirm: true,
+  });
+
+  if (error) {
+    throw new Error(isAuthEmailConflict(error) ? "email-vergeben" : "auth-email");
+  }
+}
+
+async function restoreLinkedAuthEmail({
+  authUserId,
+  previousEmail,
+  nextEmail,
+}: {
+  authUserId: string | null;
+  previousEmail: string;
+  nextEmail: string;
+}) {
+  if (!authUserId || previousEmail.toLowerCase() === nextEmail.toLowerCase()) {
+    return;
+  }
+
+  const admin = createSupabaseAdminClient();
+  await admin.auth.admin.updateUserById(authUserId, {
+    email: previousEmail,
+    email_confirm: true,
+  });
 }
 
 async function ensureLastAdminIsPreserved({
@@ -131,6 +201,28 @@ export async function updateEmployee(formData: FormData) {
     nextStatus: parsed.data.status,
   });
 
+  const currentEmployee = await getEmployeeAuthState(parsed.data.id);
+
+  if (!currentEmployee) {
+    redirect(employeeErrorPath("nicht-gefunden"));
+  }
+
+  try {
+    await updateLinkedAuthEmail({
+      authUserId: currentEmployee.auth_user_id,
+      previousEmail: currentEmployee.email,
+      nextEmail: parsed.data.email,
+    });
+  } catch (error) {
+    redirect(
+      employeeErrorPath(
+        error instanceof Error && error.message === "email-vergeben"
+          ? "email-vergeben"
+          : "speichern",
+      ),
+    );
+  }
+
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase
     .from("employees")
@@ -143,6 +235,12 @@ export async function updateEmployee(formData: FormData) {
     .eq("id", parsed.data.id);
 
   if (error) {
+    await restoreLinkedAuthEmail({
+      authUserId: currentEmployee.auth_user_id,
+      previousEmail: currentEmployee.email,
+      nextEmail: parsed.data.email,
+    });
+
     redirect(
       employeeErrorPath(isUniqueViolation(error) ? "email-vergeben" : "speichern"),
     );

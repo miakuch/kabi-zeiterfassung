@@ -153,6 +153,10 @@ export async function createEmployee(formData: FormData) {
     redirect(employeeErrorPath("ungueltige-eingabe"));
   }
 
+  if (parsed.data.role === "admin" && formData.get("confirmAdminRole") !== "1") {
+    redirect(employeeErrorPath("rollenwechsel-bestaetigen"));
+  }
+
   const supabase = await createSupabaseServerClient();
   const { data: employee, error } = await supabase
     .from("employees")
@@ -195,11 +199,31 @@ export async function updateEmployee(formData: FormData) {
     redirect(employeeErrorPath("ungueltige-eingabe"));
   }
 
-  await ensureLastAdminIsPreserved({
-    employeeId: parsed.data.id,
-    nextRole: parsed.data.role,
-    nextStatus: parsed.data.status,
-  });
+  const currentAdminState = await getEmployeeAdminState(parsed.data.id);
+
+  if (!currentAdminState) {
+    redirect(employeeErrorPath("nicht-gefunden"));
+  }
+
+  if (
+    currentAdminState.role !== parsed.data.role &&
+    formData.get("confirmRoleChange") !== "1"
+  ) {
+    redirect(employeeErrorPath("rollenwechsel-bestaetigen"));
+  }
+
+  const activeAdminCount = await getActiveAdminCount();
+
+  if (
+    wouldRemoveLastActiveAdmin({
+      activeAdminCount,
+      current: currentAdminState,
+      nextRole: parsed.data.role,
+      nextStatus: parsed.data.status,
+    })
+  ) {
+    redirect(employeeErrorPath("letzter-admin"));
+  }
 
   const currentEmployee = await getEmployeeAuthState(parsed.data.id);
 

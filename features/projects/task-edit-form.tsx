@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState, type FormEvent } from "react";
-import { CircleAlert } from "lucide-react";
+import { CircleAlert, Power } from "lucide-react";
 import {
   DirtyDiscardButton,
   DirtySaveButton,
@@ -96,6 +96,7 @@ export function TaskEditForm({
     >
       <input name="projectId" type="hidden" value={projectId} />
       <input name="taskId" type="hidden" value={task.id} />
+      <input name="status" type="hidden" value={status} />
 
       {hasNoBookableEmployees ? (
         <p className="flex gap-2 rounded-md bg-[#fff8e6] px-3 py-2 text-sm text-[#6f4f00]">
@@ -104,7 +105,7 @@ export function TaskEditForm({
         </p>
       ) : null}
 
-      <div className="grid gap-3 lg:grid-cols-[1fr_1fr_140px_150px]">
+      <div className="grid gap-3 lg:grid-cols-[1fr_1fr_150px]">
         <label className="grid gap-1 text-sm font-medium">
           Aufgabe
           <input
@@ -123,20 +124,6 @@ export function TaskEditForm({
             onChange={(event) => setDescription(event.target.value)}
             value={description}
           />
-        </label>
-        <label className="grid gap-1 text-sm font-medium">
-          Status
-          <select
-            className="min-h-11 rounded-md border bg-card px-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/25"
-            name="status"
-            onChange={(event) =>
-              setStatus(event.target.value as "active" | "inactive")
-            }
-            value={status}
-          >
-            <option value="active">Aktiv</option>
-            <option value="inactive">Inaktiv</option>
-          </select>
         </label>
         <TaskAssignmentFields
           defaultMode={task.assignmentMode}
@@ -160,6 +147,26 @@ export function TaskEditForm({
             Abrechenbar
           </label>
           {hasUnsavedChanges ? <UnsavedBadge /> : null}
+          <button
+            aria-label={status === "active" ? "Aufgabe deaktivieren" : "Aufgabe aktivieren"}
+            className={
+              status === "active"
+                ? "inline-flex size-10 items-center justify-center rounded-md border-2 border-primary bg-primary/10 text-primary transition hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                : "inline-flex size-10 items-center justify-center rounded-md border bg-background text-muted-foreground transition hover:bg-secondary hover:text-secondary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            }
+            onClick={() =>
+              setStatus((current) =>
+                current === "active" ? "inactive" : "active",
+              )
+            }
+            title={status === "active" ? "Aufgabe deaktivieren" : "Aufgabe aktivieren"}
+            type="button"
+          >
+            <Power
+              className={status === "active" ? "size-5 stroke-[3]" : "size-4"}
+              aria-hidden="true"
+            />
+          </button>
           <DirtySaveButton isDirty={hasUnsavedChanges} />
           {hasUnsavedChanges ? (
             <DirtyDiscardButton onClick={discardChanges} />

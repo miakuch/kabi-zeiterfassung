@@ -80,6 +80,17 @@ function projectPayload(parsed: z.infer<typeof projectFormSchema>) {
   };
 }
 
+async function deactivateProjectTasks(projectId: string) {
+  const admin = createSupabaseAdminClient();
+  const { error } = await admin
+    .from("tasks")
+    .update({ status: "inactive" })
+    .eq("project_id", projectId)
+    .eq("status", "active");
+
+  return error;
+}
+
 export async function createProject(formData: FormData) {
   await requireAdminSession();
 
@@ -115,7 +126,7 @@ export async function createProject(formData: FormData) {
     await admin.from("tasks").insert({
       project_id: project.id,
       name: "Allgemein",
-      status: "active",
+      status: parsed.data.status,
       default_billable: true,
       assignment_mode: "selected",
     });
@@ -161,6 +172,14 @@ export async function updateProject(formData: FormData) {
 
   if (error) {
     redirect(projectDetailPath(parsedId.data, { error: "speichern" }));
+  }
+
+  if (parsed.data.status === "inactive") {
+    const taskError = await deactivateProjectTasks(parsedId.data);
+
+    if (taskError) {
+      redirect(projectDetailPath(parsedId.data, { error: "speichern" }));
+    }
   }
 
   revalidatePath("/projekte");

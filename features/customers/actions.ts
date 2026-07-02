@@ -8,6 +8,7 @@ import {
   CACHE_TAG_REPORT_FILTER_OPTIONS,
   CACHE_TAG_TASK_PICKER_ITEMS,
 } from "@/lib/cache/tags";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getActiveProjectCount } from "./queries";
 import {
@@ -39,6 +40,54 @@ function revalidateCustomerMasterData() {
   updateTag(CACHE_TAG_PROJECT_DETAIL_OPTIONS);
   updateTag(CACHE_TAG_REPORT_FILTER_OPTIONS);
   updateTag(CACHE_TAG_TASK_PICKER_ITEMS);
+}
+
+async function deactivateCustomerHierarchy(customerId: string) {
+  const admin = createSupabaseAdminClient();
+  const { data: projects, error: projectsError } = await admin
+    .from("projects")
+    .select("id")
+    .eq("customer_id", customerId)
+    .eq("status", "active");
+
+  if (projectsError) {
+    return projectsError;
+  }
+
+  const { error: customerError } = await admin
+    .from("customers")
+    .update({ status: "inactive" })
+    .eq("id", customerId);
+
+  if (customerError) {
+    return customerError;
+  }
+
+  const projectIds = ((projects ?? []) as Array<{ id: string }>).map(
+    (project) => project.id,
+  );
+
+  if (projectIds.length === 0) {
+    return null;
+  }
+
+  const { error: projectError } = await admin
+    .from("projects")
+    .update({ status: "inactive" })
+    .in("id", projectIds)
+    .eq("status", "active");
+
+  if (projectError) {
+    return projectError;
+  }
+
+  const { error: taskError } = await admin
+    .from("tasks")
+    .update({ status: "inactive" })
+    .in("project_id", projectIds)
+    .eq("status", "active");
+
+  return taskError;
 }
 
 export async function createCustomer(formData: FormData) {
@@ -125,11 +174,7 @@ export async function deactivateCustomer(formData: FormData) {
     );
   }
 
-  const supabase = await createSupabaseServerClient();
-  const { error } = await supabase
-    .from("customers")
-    .update({ status: "inactive" })
-    .eq("id", parsed.data.id);
+  const error = await deactivateCustomerHierarchy(parsed.data.id);
 
   if (error) {
     redirect(customerErrorPath("speichern"));

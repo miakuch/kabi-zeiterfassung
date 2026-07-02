@@ -193,6 +193,7 @@ export default async function EmployeesPage({
                   data-preserve-scroll="true"
                 >
                   <input name="id" type="hidden" value={employee.id} />
+                  <input name="status" type="hidden" value={employee.status} />
 
                   <label className="grid gap-1 text-sm font-medium">
                     <span className="text-xs font-semibold uppercase text-muted-foreground xl:hidden">
@@ -243,18 +244,10 @@ export default async function EmployeesPage({
                     </span>
                   </label>
 
-                  <label className="grid gap-1 text-sm font-medium">
+                  <div className="grid min-h-11 content-center gap-2 text-sm">
                     <span className="text-xs font-semibold uppercase text-muted-foreground xl:hidden">
                       Status
                     </span>
-                    <select
-                      className="min-h-11 rounded-md border bg-background px-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/25"
-                      defaultValue={employee.status}
-                      name="status"
-                    >
-                      <option value="active">Aktiv</option>
-                      <option value="inactive">Inaktiv</option>
-                    </select>
                     <span className="flex flex-wrap gap-2">
                       <StatusBadge status={employee.status} />
                       {employee.hasLogin ? (
@@ -263,7 +256,7 @@ export default async function EmployeesPage({
                         </span>
                       ) : null}
                     </span>
-                  </label>
+                  </div>
 
                   <div className="flex flex-wrap justify-start gap-2 xl:justify-end">
                     <button

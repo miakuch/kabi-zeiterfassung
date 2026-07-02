@@ -157,6 +157,7 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
                   data-preserve-scroll="true"
                 >
                   <input name="id" type="hidden" value={customer.id} />
+                  <input name="status" type="hidden" value={customer.status} />
 
                   <label className="grid gap-1 text-sm font-medium lg:gap-2">
                     <span className="text-xs font-semibold uppercase text-muted-foreground lg:hidden">
@@ -171,19 +172,12 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
                     />
                   </label>
 
-                  <label className="grid gap-1 text-sm font-medium lg:gap-2">
+                  <div className="grid min-h-11 content-center gap-1 text-sm">
                     <span className="text-xs font-semibold uppercase text-muted-foreground lg:hidden">
                       Status
                     </span>
-                    <select
-                      className="min-h-11 rounded-md border bg-background px-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/25"
-                      defaultValue={customer.status}
-                      name="status"
-                    >
-                      <option value="active">Aktiv</option>
-                      <option value="inactive">Inaktiv</option>
-                    </select>
-                  </label>
+                    <StatusBadge status={customer.status} />
+                  </div>
 
                   <div className="grid min-h-11 content-center gap-1 text-sm">
                     <span className="text-xs font-semibold uppercase text-muted-foreground lg:hidden">
@@ -193,7 +187,6 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
                       {customer.activeProjectCount} aktiv /{" "}
                       {customer.totalProjectCount} gesamt
                     </span>
-                    <StatusBadge status={customer.status} />
                   </div>
 
                   <div className="flex flex-wrap justify-start gap-2 lg:justify-end">
@@ -241,8 +234,8 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
                           className="mt-0.5 size-4 shrink-0"
                           aria-hidden="true"
                         />
-                        Dieser Kunde hat aktive Projekte. Projekte und Aufgaben
-                        bleiben unverändert.
+                        Dieser Kunde hat aktive Projekte. Aktive Projekte und
+                        Aufgaben werden ebenfalls deaktiviert.
                       </p>
                       <div className="flex flex-wrap gap-2">
                         <form

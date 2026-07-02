@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireEmployeeSession } from "@/lib/auth/require-session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { canBookTaskForEmployee } from "@/features/tasks/task-picker/bookable-task";
 import {
   addTimeEntrySegment,
   replaceTimeEntrySegments,
@@ -82,6 +83,18 @@ export async function upsertTimeEntryFromListAction(
     return {
       formError: "Bitte prüfe die markierten Felder.",
       fieldErrors: parsed.fieldErrors,
+    };
+  }
+
+  const canBookTask = await canBookTaskForEmployee({
+    employeeId: employee.id,
+    taskId: parsed.value.taskId,
+  });
+
+  if (!canBookTask) {
+    return {
+      formError: "Diese Aufgabe ist nicht mehr aktiv oder nicht freigegeben.",
+      fieldErrors: { taskId: "not-bookable" },
     };
   }
 
@@ -243,6 +256,15 @@ export async function continueTimeEntryAction(formData: FormData) {
 
   if (draftError || existingDraft) {
     redirect(errorPath("timer-besteht"));
+  }
+
+  const canBookTask = await canBookTaskForEmployee({
+    employeeId: employee.id,
+    taskId: entry.taskId,
+  });
+
+  if (!canBookTask) {
+    redirect(errorPath("timer-aufgabe"));
   }
 
   const { error } = await supabase.from("timer_drafts").insert({

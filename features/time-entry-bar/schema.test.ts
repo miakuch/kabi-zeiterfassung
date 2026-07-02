@@ -49,6 +49,27 @@ describe("manual time entry validation", () => {
     });
   });
 
+  it("normalizes compact duration input before resolving the end time", () => {
+    expect(
+      validateManualTimeEntry({
+        taskId,
+        description: "Dokumentation",
+        workDate: "2026-06-13",
+        startTime: "14:15",
+        endTime: "",
+        durationMinutes: "0130",
+        billable: false,
+        manualMode: "duration",
+      }),
+    ).toMatchObject({
+      ok: true,
+      value: {
+        endTime: "15:45:00",
+        durationMinutes: 90,
+      },
+    });
+  });
+
   it("reports required fields only after submit validation runs", () => {
     expect(
       validateManualTimeEntry({
@@ -100,6 +121,24 @@ describe("manual time entry validation", () => {
         startTime: "14:15",
         endTime: "",
         durationMinutes: "00:00",
+        billable: true,
+        manualMode: "duration",
+      }),
+    ).toMatchObject({
+      ok: false,
+      fieldErrors: {
+        durationMinutes: "invalid-duration",
+      },
+    });
+
+    expect(
+      validateManualTimeEntry({
+        taskId,
+        description: "Dokumentation",
+        workDate: "2026-06-13",
+        startTime: "14:15",
+        endTime: "",
+        durationMinutes: "1:30",
         billable: true,
         manualMode: "duration",
       }),

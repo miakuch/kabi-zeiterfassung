@@ -25,6 +25,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
+  calculateTimeEntryFromStartAndDuration,
+  calculateTimeEntryFromStartEnd,
+} from "@/features/time/domain/time-calculation";
+import {
   discardTimerDraftAction,
   saveStoppedTimerDraftAction,
   startTimerDraftAction,
@@ -164,6 +168,64 @@ function getBerlinDateTimeValues(date = new Date()) {
   };
 }
 
+function normalizeDurationInput(value: string) {
+  const trimmed = value.trim();
+  const compactDigits = /^(\d{1,2})([0-5]\d)$/.exec(trimmed);
+
+  if (compactDigits) {
+    return `${compactDigits[1].padStart(2, "0")}:${compactDigits[2]}`;
+  }
+
+  const timeParts = /^(\d{1,2}):([0-5]\d)$/.exec(trimmed);
+
+  if (timeParts) {
+    return `${timeParts[1].padStart(2, "0")}:${timeParts[2]}`;
+  }
+
+  return value;
+}
+
+function parseDurationInputToMinutes(duration: string) {
+  const match = /^(\d{2}):([0-5]\d)$/.exec(
+    normalizeDurationInput(duration).trim(),
+  );
+
+  if (!match) {
+    return null;
+  }
+
+  const totalMinutes = Number(match[1]) * 60 + Number(match[2]);
+
+  return totalMinutes >= 1 ? totalMinutes : null;
+}
+
+function formatDurationMinutes(totalMinutes: number) {
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
+
+function formatClockInput(time: string) {
+  return time.slice(0, 5);
+}
+
+function cleanDurationInput(value: string) {
+  const hasColon = value.includes(":");
+
+  if (hasColon) {
+    const [rawHours = "", rawMinutes = ""] = value.split(":");
+    const hours = rawHours.replace(/\D/g, "").slice(0, 2);
+    const minutes = rawMinutes.replace(/\D/g, "").slice(0, 2);
+
+    return `${hours}:${minutes}`;
+  }
+
+  const digits = value.replace(/\D/g, "").slice(0, 4);
+
+  return digits;
+}
+
 export function TimeEntryBar({
   tasks,
   currentEmployeeId,
@@ -269,6 +331,31 @@ export function TimeEntryBar({
         nowMs,
       )
     : "00:00:00";
+  const calculatedDuration = useMemo(() => {
+    if (!startTime || !endTime) {
+      return "";
+    }
+
+    const calculated = calculateTimeEntryFromStartEnd({ startTime, endTime });
+
+    return calculated.ok
+      ? formatDurationMinutes(calculated.value.durationMinutes)
+      : "";
+  }, [endTime, startTime]);
+  const calculatedEndTime = useMemo(() => {
+    const duration = parseDurationInputToMinutes(durationMinutes);
+
+    if (!startTime || duration === null) {
+      return "";
+    }
+
+    const calculated = calculateTimeEntryFromStartAndDuration({
+      startTime,
+      durationMinutes: duration,
+    });
+
+    return calculated.ok ? formatClockInput(calculated.value.endTime) : "";
+  }, [durationMinutes, startTime]);
 
   useEffect(() => {
     if (!currentTimerDraft || currentTimerDraft.status !== "running") {
@@ -324,8 +411,24 @@ export function TimeEntryBar({
   }
 
   function switchManualMode(nextMode: ManualEntryMode) {
+    if (nextMode === "duration" && calculatedDuration) {
+      setDurationMinutes(calculatedDuration);
+    }
+
+    if (nextMode === "end" && calculatedEndTime) {
+      setEndTime(calculatedEndTime);
+    }
+
     setManualMode(nextMode);
     persistPreferences(entryMode, nextMode);
+  }
+
+  function onDurationChange(value: string) {
+    setDurationMinutes(cleanDurationInput(value));
+  }
+
+  function onDurationBlur() {
+    setDurationMinutes((current) => normalizeDurationInput(current));
   }
 
   function onTaskChange(nextTaskId: string) {
@@ -611,8 +714,8 @@ export function TimeEntryBar({
           <input name="billable" type="hidden" value={billable ? "1" : "0"} />
           <input name="manualMode" type="hidden" value={manualMode} />
 
-          <div className="grid gap-3 lg:grid-cols-[150px_120px_minmax(180px,1fr)_auto]">
-            <label className="grid gap-1 text-sm font-medium">
+          <div className="grid gap-3 lg:grid-cols-[minmax(180px,200px)_minmax(120px,140px)_minmax(300px,420px)_auto] lg:justify-start xl:grid-cols-[200px_140px_420px_auto]">
+            <label className="grid min-w-0 gap-1 text-sm font-medium">
               Datum
               <span className="relative">
                 <button
@@ -651,7 +754,7 @@ export function TimeEntryBar({
               />
             </label>
 
-            <div className="grid gap-2 sm:grid-cols-[auto_minmax(120px,1fr)]">
+            <div className="grid gap-2 sm:grid-cols-[auto_minmax(112px,132px)_minmax(112px,132px)]">
               <div className="grid grid-cols-2 self-end rounded-md border bg-background p-1">
                 <Button
                   className="min-h-9 px-3"
@@ -672,36 +775,64 @@ export function TimeEntryBar({
               </div>
 
               {manualMode === "end" ? (
-                <label className="grid gap-1 text-sm font-medium">
-                  Ende
-                  <input
-                    className={cn(
-                      "min-h-11 rounded-md border bg-background px-3 text-base outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/25",
-                      errorClass("endTime"),
-                    )}
-                    name="endTime"
-                    onChange={(event) => setEndTime(event.target.value)}
-                    type="time"
-                    value={endTime}
-                  />
-                </label>
+                <>
+                  <label className="grid min-w-0 gap-1 text-sm font-medium">
+                    Ende
+                    <input
+                      className={cn(
+                        "min-h-11 w-full min-w-0 rounded-md border bg-background px-3 text-base outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/25",
+                        errorClass("endTime"),
+                      )}
+                      name="endTime"
+                      onChange={(event) => setEndTime(event.target.value)}
+                      type="time"
+                      value={endTime}
+                    />
+                  </label>
+                  <label className="grid min-w-0 gap-1 text-sm font-medium">
+                    Dauer
+                    <input
+                      aria-label="Berechnete Dauer"
+                      className="min-h-11 w-full min-w-0 rounded-md border bg-secondary/40 px-3 text-base text-muted-foreground outline-none"
+                      placeholder="--:--"
+                      readOnly
+                      type="text"
+                      value={calculatedDuration}
+                    />
+                  </label>
+                </>
               ) : (
-                <label className="grid gap-1 text-sm font-medium">
-                  Dauer
-                  <input
-                    className={cn(
-                      "min-h-11 rounded-md border bg-background px-3 text-base outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/25",
-                      errorClass("durationMinutes"),
-                    )}
-                    inputMode="numeric"
-                    name="durationMinutes"
-                    onChange={(event) => setDurationMinutes(event.target.value)}
-                    pattern="[0-9]{1,2}:[0-5][0-9]"
-                    placeholder="01:30"
-                    type="text"
-                    value={durationMinutes}
-                  />
-                </label>
+                <>
+                  <label className="grid min-w-0 gap-1 text-sm font-medium">
+                    Dauer
+                    <input
+                      className={cn(
+                        "min-h-11 w-full min-w-0 rounded-md border bg-background px-3 text-base outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/25",
+                        errorClass("durationMinutes"),
+                      )}
+                      inputMode="numeric"
+                      maxLength={5}
+                      name="durationMinutes"
+                      onBlur={onDurationBlur}
+                      onChange={(event) => onDurationChange(event.target.value)}
+                      pattern="[0-9]{2}:[0-5][0-9]"
+                      placeholder="--:--"
+                      type="text"
+                      value={durationMinutes}
+                    />
+                  </label>
+                  <label className="grid min-w-0 gap-1 text-sm font-medium">
+                    Ende
+                    <input
+                      aria-label="Berechnete Endzeit"
+                      className="min-h-11 w-full min-w-0 rounded-md border bg-secondary/40 px-3 text-base text-muted-foreground outline-none"
+                      placeholder="--:--"
+                      readOnly
+                      type="text"
+                      value={calculatedEndTime}
+                    />
+                  </label>
+                </>
               )}
             </div>
 
@@ -729,7 +860,7 @@ export function TimeEntryBar({
           <input name="taskId" type="hidden" value={taskId} />
           <input name="billable" type="hidden" value={billable ? "1" : "0"} />
 
-          <div className="grid gap-3 lg:grid-cols-[150px_120px_120px_auto_auto]">
+          <div className="grid gap-3 lg:grid-cols-[minmax(180px,200px)_minmax(120px,140px)_minmax(120px,140px)_auto_auto] lg:justify-start xl:grid-cols-[200px_140px_140px_auto_auto]">
             <label className="grid gap-1 text-sm font-medium">
               Datum
               <span className="relative">

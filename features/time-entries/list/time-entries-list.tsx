@@ -367,22 +367,24 @@ export function TimeEntriesList({ result, tasks }: TimeEntriesListProps) {
           Seite {result.page} von {result.totalPages}
         </p>
         <div className="flex gap-2">
-          <Button asChild disabled={!result.hasPreviousPage} variant="outline">
-            <a
-              aria-disabled={!result.hasPreviousPage}
-              href={pageHref(Math.max(1, result.page - 1))}
-            >
+          {result.hasPreviousPage ? (
+            <Button asChild variant="outline">
+              <a href={pageHref(result.page - 1)}>Zurück</a>
+            </Button>
+          ) : (
+            <Button disabled type="button" variant="outline">
               Zurück
-            </a>
-          </Button>
-          <Button asChild disabled={!result.hasNextPage} variant="outline">
-            <a
-              aria-disabled={!result.hasNextPage}
-              href={pageHref(result.page + 1)}
-            >
+            </Button>
+          )}
+          {result.hasNextPage ? (
+            <Button asChild variant="outline">
+              <a href={pageHref(result.page + 1)}>Weiter</a>
+            </Button>
+          ) : (
+            <Button disabled type="button" variant="outline">
               Weiter
-            </a>
-          </Button>
+            </Button>
+          )}
         </div>
       </div>
 

@@ -110,7 +110,12 @@ function validateCommon(input: ManualTimeEntryInput) {
 }
 
 function parseDurationToMinutes(duration: string) {
-  const match = /^(\d{1,2}):([0-5]\d)$/.exec(duration.trim());
+  const normalizedDuration = duration.trim().replace(/^(\d{1,2})([0-5]\d)$/, (
+    _value,
+    hours: string,
+    minutes: string,
+  ) => `${hours.padStart(2, "0")}:${minutes}`);
+  const match = /^(\d{2}):([0-5]\d)$/.exec(normalizedDuration);
 
   if (!match) {
     return null;

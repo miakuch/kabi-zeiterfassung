@@ -188,14 +188,23 @@ export async function getOwnTimeEntryList({
   });
   const totalCount = count ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const clampedPage = Math.min(safePage, totalPages);
+
+  if (clampedPage !== safePage) {
+    return getOwnTimeEntryList({
+      employeeId,
+      page: clampedPage,
+      pageSize,
+    });
+  }
 
   return {
     groups: groupTimeEntriesByDate(entries),
-    page: safePage,
+    page: clampedPage,
     pageSize,
     totalCount,
     totalPages,
-    hasPreviousPage: safePage > 1,
-    hasNextPage: safePage < totalPages,
+    hasPreviousPage: clampedPage > 1,
+    hasNextPage: clampedPage < totalPages,
   };
 }

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowLeft, CircleAlert, Plus, Save } from "lucide-react";
 import { StatusTabs } from "@/features/admin/status-tabs";
 import { DeleteTaskButton } from "@/features/projects/delete-task-button";
+import { TaskAssignmentFields } from "@/features/projects/task-assignment-fields";
 import {
   createProject,
   updateProject,
@@ -330,17 +331,10 @@ export function ProjectDetailPage({
                     name="description"
                   />
                 </label>
-                <label className="grid gap-1 text-sm font-medium">
-                  Freigabe
-                  <select
-                    className="min-h-11 rounded-md border bg-card px-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/25"
-                    defaultValue="all"
-                    name="assignmentMode"
-                  >
-                    <option value="all">Alle</option>
-                    <option value="selected">Ausgewählt</option>
-                  </select>
-                </label>
+                <TaskAssignmentFields
+                  defaultMode="all"
+                  employees={options.employees}
+                />
                 <button
                   className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:bg-[#1d7d90]"
                   type="submit"
@@ -350,31 +344,7 @@ export function ProjectDetailPage({
                 </button>
               </div>
 
-              <div className="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-end">
-                <fieldset className="grid gap-2">
-                  <legend className="text-sm font-medium">
-                    Ausgewählte Mitarbeitende
-                  </legend>
-                  <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-                    {options.employees.map((employee) => (
-                      <label
-                        className="flex min-h-10 items-center gap-2 rounded-md border bg-card px-3 text-sm"
-                        key={employee.id}
-                      >
-                        <input
-                          name="assignedEmployeeIds"
-                          type="checkbox"
-                          value={employee.id}
-                        />
-                        <span className="truncate">
-                          {employee.name}
-                          {employee.status === "inactive" ? " (inaktiv)" : ""}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </fieldset>
-
+              <div className="flex justify-end">
                 <label className="flex min-h-11 items-center gap-2 text-sm font-medium">
                   <input
                     defaultChecked
@@ -446,47 +416,14 @@ export function ProjectDetailPage({
                         <option value="inactive">Inaktiv</option>
                       </select>
                     </label>
-                    <label className="grid gap-1 text-sm font-medium">
-                      Freigabe
-                      <select
-                        className="min-h-11 rounded-md border bg-card px-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/25"
-                        defaultValue={task.assignmentMode}
-                        name="assignmentMode"
-                      >
-                        <option value="selected">Ausgewählt</option>
-                        <option value="all">Alle</option>
-                      </select>
-                    </label>
+                    <TaskAssignmentFields
+                      defaultMode={task.assignmentMode}
+                      defaultSelectedEmployeeIds={task.assignedEmployeeIds}
+                      employees={options.employees}
+                    />
                   </div>
 
-                  <div className="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-end">
-                    <fieldset className="grid gap-2">
-                      <legend className="text-sm font-medium">
-                        Ausgewählte Mitarbeitende
-                      </legend>
-                      <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-                        {options.employees.map((employee) => (
-                          <label
-                            className="flex min-h-10 items-center gap-2 rounded-md border bg-card px-3 text-sm"
-                            key={employee.id}
-                          >
-                            <input
-                              defaultChecked={task.assignedEmployeeIds.includes(
-                                employee.id,
-                              )}
-                              name="assignedEmployeeIds"
-                              type="checkbox"
-                              value={employee.id}
-                            />
-                            <span className="truncate">
-                              {employee.name}
-                              {employee.status === "inactive" ? " (inaktiv)" : ""}
-                            </span>
-                          </label>
-                        ))}
-                      </div>
-                    </fieldset>
-
+                  <div className="flex justify-end">
                     <div className="flex flex-wrap items-center justify-end gap-3">
                       <label className="flex min-h-11 items-center gap-2 text-sm font-medium">
                         <input

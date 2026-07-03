@@ -39,6 +39,7 @@ export function CustomerRow({
   customer,
   showDeactivateWarning,
 }: CustomerRowProps) {
+  const formId = `customer-update-${customer.id}`;
   const [name, setName] = useState(customer.name);
   const hasUnsavedChanges = name !== customer.name;
 
@@ -50,51 +51,54 @@ export function CustomerRow({
 
   return (
     <div className="grid gap-0">
-      <form
-        action={updateCustomer}
-        className="grid gap-3 px-4 py-4 lg:grid-cols-[minmax(180px,1fr)_120px_130px_144px] lg:items-center"
-        data-preserve-scroll="true"
-        onSubmit={handleSubmit}
-      >
-        <input name="id" type="hidden" value={customer.id} />
-        <input name="status" type="hidden" value={customer.status} />
+      <div className="grid gap-3 px-4 py-4 lg:grid-cols-[minmax(180px,1fr)_120px_130px_144px] lg:items-center">
+        <form
+          action={updateCustomer}
+          className="contents"
+          data-preserve-scroll="true"
+          id={formId}
+          onSubmit={handleSubmit}
+        >
+          <input name="id" type="hidden" value={customer.id} />
+          <input name="status" type="hidden" value={customer.status} />
 
-        <label className="grid gap-1 text-sm font-medium lg:gap-2">
-          <span className="text-xs font-semibold uppercase text-muted-foreground lg:hidden">
-            Name
-          </span>
-          <input
-            className="min-h-11 rounded-md border bg-background px-3 text-base outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/25"
-            maxLength={120}
-            name="name"
-            onChange={(event) => setName(event.target.value)}
-            required
-            value={name}
-          />
-        </label>
+          <label className="grid gap-1 text-sm font-medium lg:gap-2">
+            <span className="text-xs font-semibold uppercase text-muted-foreground lg:hidden">
+              Name
+            </span>
+            <input
+              className="min-h-11 rounded-md border bg-background px-3 text-base outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/25"
+              maxLength={120}
+              name="name"
+              onChange={(event) => setName(event.target.value)}
+              required
+              value={name}
+            />
+          </label>
 
-        <div className="grid min-h-11 content-center gap-1 text-sm">
-          <span className="text-xs font-semibold uppercase text-muted-foreground lg:hidden">
-            Status
-          </span>
-          <span className="flex flex-wrap gap-2">
-            <StatusBadge status={customer.status} />
-            {hasUnsavedChanges ? <UnsavedBadge /> : null}
-          </span>
-        </div>
+          <div className="grid min-h-11 content-center gap-1 text-sm">
+            <span className="text-xs font-semibold uppercase text-muted-foreground lg:hidden">
+              Status
+            </span>
+            <span className="flex flex-wrap gap-2">
+              <StatusBadge status={customer.status} />
+              {hasUnsavedChanges ? <UnsavedBadge /> : null}
+            </span>
+          </div>
 
-        <div className="grid min-h-11 content-center gap-1 text-sm">
-          <span className="text-xs font-semibold uppercase text-muted-foreground lg:hidden">
-            Projekte
-          </span>
-          <span>
-            {customer.activeProjectCount} aktiv / {customer.totalProjectCount}{" "}
-            gesamt
-          </span>
-        </div>
+          <div className="grid min-h-11 content-center gap-1 text-sm">
+            <span className="text-xs font-semibold uppercase text-muted-foreground lg:hidden">
+              Projekte
+            </span>
+            <span>
+              {customer.activeProjectCount} aktiv / {customer.totalProjectCount}{" "}
+              gesamt
+            </span>
+          </div>
+        </form>
 
         <div className="flex flex-wrap justify-start gap-2 lg:justify-end">
-          <DirtySaveButton isDirty={hasUnsavedChanges} />
+          <DirtySaveButton form={formId} isDirty={hasUnsavedChanges} />
           {hasUnsavedChanges ? (
             <DirtyDiscardButton onClick={() => setName(customer.name)} />
           ) : null}
@@ -124,7 +128,7 @@ export function CustomerRow({
             </form>
           )}
         </div>
-      </form>
+      </div>
 
       {showDeactivateWarning ? (
         <div className="border-t bg-[#fff8e6] px-4 py-3">

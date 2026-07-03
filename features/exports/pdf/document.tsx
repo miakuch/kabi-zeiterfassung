@@ -156,18 +156,32 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   metaColumn: {
-    width: "33.333%",
-    paddingRight: 12,
+    paddingRight: 8,
+  },
+  metaProjectColumn: {
+    width: "60%",
+  },
+  metaPeriodColumn: {
+    width: "25%",
+  },
+  metaHoursColumn: {
+    width: "15%",
+    paddingRight: 0,
   },
   metaLabel: {
-    fontSize: 7,
+    fontSize: 6.5,
     color: "#607384",
     textTransform: "uppercase",
-    marginBottom: 3,
+    marginBottom: 2,
   },
   metaValue: {
-    fontSize: 10,
+    fontSize: 8.5,
     fontWeight: 700,
+  },
+  metaMuted: {
+    fontSize: 7.5,
+    color: "#607384",
+    marginTop: 1,
   },
   table: {
     width: "100%",
@@ -232,9 +246,31 @@ const styles = StyleSheet.create({
 });
 
 function projectLabel(data: ProjectMonthExportData) {
-  return data.project.projectCode
-    ? `${data.project.projectCode} - ${data.project.projectName}`
-    : data.project.projectName;
+  return data.project.projectName;
+}
+
+export function buildProjectMonthPdfTaskLabel(data: ProjectMonthExportData) {
+  if (data.filteredTaskNames.length > 0) {
+    return data.filteredTaskNames.join(", ");
+  }
+
+  const entryTaskNames = [...new Set(data.entries.map((entry) => entry.taskName))]
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b, "de"));
+
+  return entryTaskNames.length === 1 ? entryTaskNames[0] : "";
+}
+
+export function buildProjectMonthPdfProjectContext(
+  data: ProjectMonthExportData,
+) {
+  return [
+    data.project.projectCode,
+    data.project.projectName,
+    buildProjectMonthPdfTaskLabel(data),
+  ]
+    .filter((value): value is string => Boolean(value))
+    .join(" - ");
 }
 
 function TableHeader() {
@@ -258,6 +294,7 @@ export function ProjectMonthPdfDocument({
   data: ProjectMonthExportData;
 }) {
   const rows = buildProjectMonthPdfRows(data.entries);
+  const projectContext = buildProjectMonthPdfProjectContext(data);
 
   return (
     <Document
@@ -279,18 +316,18 @@ export function ProjectMonthPdfDocument({
         </View>
 
         <View style={styles.metaGrid}>
-          <View style={styles.metaColumn}>
+          <View style={[styles.metaColumn, styles.metaProjectColumn]}>
             <Text style={styles.metaLabel}>Projekt</Text>
-            <Text style={styles.metaValue}>{projectLabel(data)}</Text>
-            <Text style={styles.muted}>{data.project.customerName}</Text>
+            <Text style={styles.metaValue}>{projectContext}</Text>
+            <Text style={styles.metaMuted}>{data.project.customerName}</Text>
           </View>
-          <View style={styles.metaColumn}>
+          <View style={[styles.metaColumn, styles.metaPeriodColumn]}>
             <Text style={styles.metaLabel}>Zeitraum</Text>
             <Text style={styles.metaValue}>
               {formatExportDate(data.startDate)} bis {formatExportDate(data.endDate)}
             </Text>
           </View>
-          <View style={styles.metaColumn}>
+          <View style={[styles.metaColumn, styles.metaHoursColumn]}>
             <Text style={styles.metaLabel}>Monatsstunden</Text>
             <Text style={styles.metaValue}>
               {formatExportDecimalHours(data.totalDecimalHours)}

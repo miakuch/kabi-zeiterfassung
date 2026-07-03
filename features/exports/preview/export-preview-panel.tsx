@@ -5,29 +5,19 @@ import {
   formatExportDecimalHours,
   type ProjectMonthExportData,
 } from "@/features/exports/domain/export-data";
-import type { ReportFilterOptions } from "@/features/reports/filters/queries";
-import { ExportPreviewForm } from "./export-preview-form";
+import type { ReportFilterState } from "@/features/reports/filters/domain";
 import {
   formatExportMonthValue,
   formatExportMonthLabel,
   type ExportPreviewSelection,
 } from "./domain";
 
-type PreservedParam = {
-  name: string;
-  value: string;
-};
-
 type ExportPreviewPanelProps = {
-  options: ReportFilterOptions;
-  preservedParams: PreservedParam[];
+  filters: ReportFilterState;
   preview: ProjectMonthExportData | null;
   selection: ExportPreviewSelection;
+  taskNames: string[];
 };
-
-function trimTime(value: string) {
-  return value.slice(0, 5);
-}
 
 function employeeSummary(preview: ProjectMonthExportData) {
   const names = [...new Set(preview.entries.map((entry) => entry.employeeName))];
@@ -35,33 +25,98 @@ function employeeSummary(preview: ProjectMonthExportData) {
   return names.length > 0 ? names.join(", ") : "Keine Mitarbeitenden";
 }
 
-function excelExportHref(preview: ProjectMonthExportData) {
+function taskSummary(preview: ProjectMonthExportData, taskNames: string[]) {
+  if (taskNames.length > 0) {
+    return taskNames.join(", ");
+  }
+
+  if (preview.filteredTaskNames.length > 0) {
+    return preview.filteredTaskNames.join(", ");
+  }
+
+  const entryTaskNames = [...new Set(preview.entries.map((entry) => entry.taskName))]
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b, "de"));
+
+  return entryTaskNames.length === 1 ? entryTaskNames[0] : "";
+}
+
+function projectContext(preview: ProjectMonthExportData, taskNames: string[]) {
+  return [
+    preview.project.projectCode,
+    preview.project.projectName,
+    taskSummary(preview, taskNames),
+  ]
+    .filter((value): value is string => Boolean(value))
+    .join(" - ");
+}
+
+function appendReportFilterParams(
+  params: URLSearchParams,
+  filters: ReportFilterState,
+  taskNames: string[],
+) {
+  for (const taskId of filters.taskIds) {
+    params.append("task", taskId);
+  }
+
+  for (const taskName of taskNames) {
+    params.append("taskName", taskName);
+  }
+
+  for (const employeeId of filters.employeeIds) {
+    params.append("employee", employeeId);
+  }
+
+  if (filters.billable !== "all") {
+    params.set("billable", filters.billable);
+  }
+}
+
+function excelExportHref({
+  filters,
+  preview,
+  taskNames,
+}: {
+  filters: ReportFilterState;
+  preview: ProjectMonthExportData;
+  taskNames: string[];
+}) {
   const params = new URLSearchParams({
     project: preview.project.id,
     month: formatExportMonthValue(preview.month),
   });
+  appendReportFilterParams(params, filters, taskNames);
 
   return `/berichte/export/excel?${params.toString()}`;
 }
 
-function pdfExportHref(preview: ProjectMonthExportData) {
+function pdfExportHref({
+  filters,
+  preview,
+  taskNames,
+}: {
+  filters: ReportFilterState;
+  preview: ProjectMonthExportData;
+  taskNames: string[];
+}) {
   const params = new URLSearchParams({
     project: preview.project.id,
     month: formatExportMonthValue(preview.month),
   });
+  appendReportFilterParams(params, filters, taskNames);
 
   return `/berichte/export/pdf?${params.toString()}`;
 }
 
 export function ExportPreviewPanel({
-  options,
-  preservedParams,
+  filters,
   preview,
   selection,
+  taskNames,
 }: ExportPreviewPanelProps) {
   const canPreview = Boolean(selection.projectId && selection.month);
   const hasEntries = Boolean(preview && preview.entries.length > 0);
-  const visibleEntries = preview?.entries.slice(0, 6) ?? [];
 
   return (
     <section
@@ -72,18 +127,11 @@ export function ExportPreviewPanel({
         <div>
           <h2 className="text-lg font-semibold">Zeitnachweis-Export</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Projekt-Monatsnachweis ohne Stundensätze und Beträge.
+            Projekt-Monatsnachweis für den oben gesetzten Filter, ohne
+            Stundensätze und Beträge.
           </p>
         </div>
       </div>
-
-      <ExportPreviewForm
-        key={`${selection.projectId}:${selection.monthValue}`}
-        options={options}
-        preservedParams={preservedParams}
-        projectId={selection.projectId}
-        monthValue={selection.monthValue}
-      />
 
       {selection.monthIsInvalid ? (
         <div className="flex items-start gap-3 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
@@ -94,7 +142,9 @@ export function ExportPreviewPanel({
 
       {!canPreview ? (
         <div className="rounded-md border bg-secondary/60 p-4 text-sm text-muted-foreground">
-          Bitte Projekt und Monat für den Zeitnachweis wählen.
+          Für den Export bitte oben einen vollständigen Kalendermonat und genau
+          ein Projekt auswählen. Aufgaben und Mitarbeitende können zusätzlich
+          eingeschränkt werden.
         </div>
       ) : null}
 
@@ -104,13 +154,13 @@ export function ExportPreviewPanel({
             {hasEntries ? (
               <>
                 <Button asChild variant="outline">
-                  <a href={excelExportHref(preview)}>
+                  <a href={excelExportHref({ filters, preview, taskNames })}>
                     <Download className="size-4" aria-hidden="true" />
                     Excel herunterladen
                   </a>
                 </Button>
                 <Button asChild variant="outline">
-                  <a href={pdfExportHref(preview)}>
+                  <a href={pdfExportHref({ filters, preview, taskNames })}>
                     <Download className="size-4" aria-hidden="true" />
                     PDF herunterladen
                   </a>
@@ -136,9 +186,7 @@ export function ExportPreviewPanel({
                 Projekt
               </p>
               <p className="mt-1 font-semibold">
-                {preview.project.projectCode
-                  ? `${preview.project.projectCode} - ${preview.project.projectName}`
-                  : preview.project.projectName}
+                {projectContext(preview, taskNames)}
               </p>
               <p className="mt-1 text-sm text-muted-foreground">
                 {preview.project.customerName}
@@ -181,77 +229,11 @@ export function ExportPreviewPanel({
                 className="mt-0.5 size-4 shrink-0"
                 aria-hidden="true"
               />
-              <p>Keine abrechenbaren Einträge für diesen Projektmonat.</p>
+              <p>
+                Keine abrechenbaren Einträge für diesen Projektmonat und Filter.
+                Zeitnachweise enthalten in V1 nur abrechenbare Zeiten.
+              </p>
             </div>
-          ) : null}
-
-          <div className="overflow-x-auto rounded-md border">
-            <table className="w-full min-w-[820px] border-collapse text-sm">
-              <thead className="bg-secondary text-secondary-foreground">
-                <tr>
-                  <th className="border-b px-3 py-2 text-left font-semibold">
-                    Datum
-                  </th>
-                  <th className="border-b px-3 py-2 text-left font-semibold">
-                    Arbeitszeit
-                  </th>
-                  <th className="border-b px-3 py-2 text-left font-semibold">
-                    Beschreibung
-                  </th>
-                  <th className="border-b px-3 py-2 text-left font-semibold">
-                    Aufgabe
-                  </th>
-                  <th className="border-b px-3 py-2 text-left font-semibold">
-                    Name
-                  </th>
-                  <th className="border-b px-3 py-2 text-right font-semibold">
-                    Stunden
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {visibleEntries.length > 0 ? (
-                  visibleEntries.map((entry) => (
-                    <tr className="border-b last:border-b-0" key={entry.id}>
-                      <td className="whitespace-nowrap px-3 py-2 align-top">
-                        {formatExportDate(entry.workDate)}
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-2 align-top">
-                        {trimTime(entry.startTime)}-{trimTime(entry.endTime)}
-                      </td>
-                      <td className="px-3 py-2 align-top font-medium">
-                        <span className="block max-w-[320px] truncate">
-                          {entry.description}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2 align-top text-muted-foreground">
-                        {entry.taskName}
-                      </td>
-                      <td className="px-3 py-2 align-top">{entry.employeeName}</td>
-                      <td className="whitespace-nowrap px-3 py-2 text-right align-top">
-                        {formatExportDecimalHours(entry.durationDecimalHours)}
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td
-                      className="px-3 py-8 text-center text-muted-foreground"
-                      colSpan={6}
-                    >
-                      Keine Einträge für die Vorschau.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {preview.entries.length > visibleEntries.length ? (
-            <p className="text-sm text-muted-foreground">
-              {preview.entries.length - visibleEntries.length} weitere Einträge im
-              Zeitnachweis.
-            </p>
           ) : null}
         </div>
       ) : null}

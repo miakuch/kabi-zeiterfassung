@@ -34,6 +34,7 @@ export type ProjectMonthExportData = {
   endDate: string;
   totalMinutes: number;
   totalDecimalHours: number;
+  filteredTaskNames: string[];
   entries: ExportTimeEntry[];
 };
 
@@ -113,10 +114,12 @@ export function buildProjectMonthExportData({
   project,
   month,
   entries,
+  filteredTaskNames = [],
 }: {
   project: ExportProject;
   month: ExportMonth;
   entries: ExportTimeEntry[];
+  filteredTaskNames?: string[];
 }): ProjectMonthExportData {
   const range = getMonthDateRange(month);
   const sortedEntries = sortExportEntries(entries);
@@ -130,6 +133,7 @@ export function buildProjectMonthExportData({
     month,
     ...range,
     entries: sortedEntries,
+    filteredTaskNames,
     totalMinutes,
     totalDecimalHours: minutesToDecimalHours(totalMinutes),
   };

@@ -4,6 +4,8 @@ import type { ProjectMonthExportData } from "../domain/export-data";
 import {
   buildProjectMonthPdfRows,
   buildProjectMonthPdfFileName,
+  buildProjectMonthPdfProjectContext,
+  buildProjectMonthPdfTaskLabel,
   ProjectMonthPdfDocument,
 } from "./document";
 
@@ -22,6 +24,7 @@ const exportData: ProjectMonthExportData = {
   endDate: "2026-06-30",
   totalMinutes: 120,
   totalDecimalHours: 2,
+  filteredTaskNames: ["Konzeption"],
   entries: [
     {
       id: "entry-1",
@@ -72,6 +75,39 @@ describe("project month pdf document", () => {
         durationDecimalHours: 2,
       },
     ]);
+  });
+
+  it("uses explicit filtered task names for the pdf metadata", () => {
+    expect(buildProjectMonthPdfTaskLabel(exportData)).toBe("Konzeption");
+  });
+
+  it("falls back to the entry task when the export contains one task", () => {
+    expect(
+      buildProjectMonthPdfTaskLabel({
+        ...exportData,
+        filteredTaskNames: [],
+      }),
+    ).toBe("Konzeption");
+  });
+
+  it("builds a customer-facing project context for the metadata", () => {
+    expect(buildProjectMonthPdfProjectContext(exportData)).toBe(
+      "WEB-26 - Relaunch - Konzeption",
+    );
+  });
+
+  it("omits missing project context parts", () => {
+    expect(
+      buildProjectMonthPdfProjectContext({
+        ...exportData,
+        project: {
+          ...exportData.project,
+          projectCode: null,
+        },
+        filteredTaskNames: [],
+        entries: [],
+      }),
+    ).toBe("Relaunch");
   });
 
   it("renders to a pdf buffer without financial data", async () => {

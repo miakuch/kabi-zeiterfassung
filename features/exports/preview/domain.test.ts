@@ -4,12 +4,45 @@ import {
   formatExportMonthValue,
   resolveExportPreviewSelection,
 } from "./domain";
+import type { ReportFilterOptions } from "@/features/reports/filters/queries";
+
+const options: ReportFilterOptions = {
+  customers: [
+    {
+      id: "customer-1",
+      name: "NDR",
+    },
+  ],
+  projects: [
+    {
+      id: "project-1",
+      customerId: "customer-1",
+      name: "Relaunch",
+      code: "NDR-26",
+    },
+    {
+      id: "project-2",
+      customerId: "customer-1",
+      name: "Support",
+      code: "NDR-27",
+    },
+  ],
+  tasks: [
+    {
+      id: "task-1",
+      projectId: "project-1",
+      name: "Konzeption",
+    },
+  ],
+  employees: [],
+};
 
 describe("export preview selection", () => {
   it("prefills project and full month from report filters", () => {
     expect(
       resolveExportPreviewSelection({
-        reportProjectId: "project-1",
+        projectIds: ["project-1"],
+        options,
         reportStartDate: "2026-06-01",
         reportEndDate: "2026-06-30",
       }),
@@ -24,21 +57,20 @@ describe("export preview selection", () => {
     });
   });
 
-  it("keeps explicit export selection independent from report filters", () => {
+  it("infers a single project from selected tasks", () => {
     expect(
       resolveExportPreviewSelection({
-        exportProjectId: "export-project",
-        exportMonth: "2026-05",
-        reportProjectId: "report-project",
+        taskIds: ["task-1"],
+        options,
         reportStartDate: "2026-06-01",
         reportEndDate: "2026-06-30",
       }),
     ).toMatchObject({
-      projectId: "export-project",
-      monthValue: "2026-05",
+      projectId: "project-1",
+      monthValue: "2026-06",
       month: {
         year: 2026,
-        month: 5,
+        month: 6,
       },
     });
   });
@@ -46,7 +78,8 @@ describe("export preview selection", () => {
   it("does not infer a month from partial ranges", () => {
     expect(
       resolveExportPreviewSelection({
-        reportProjectId: "project-1",
+        projectIds: ["project-1"],
+        options,
         reportStartDate: "2026-06-02",
         reportEndDate: "2026-06-30",
       }),
@@ -56,18 +89,17 @@ describe("export preview selection", () => {
     });
   });
 
-  it("marks invalid explicit months", () => {
+  it("does not infer a project from multiple selected projects", () => {
     expect(
       resolveExportPreviewSelection({
-        exportMonth: "2026-13",
-        reportProjectId: "project-1",
+        projectIds: ["project-1", "project-2"],
+        options,
         reportStartDate: "2026-06-01",
         reportEndDate: "2026-06-30",
       }),
     ).toMatchObject({
-      monthValue: "2026-13",
-      month: null,
-      monthIsInvalid: true,
+      projectId: "",
+      monthValue: "2026-06",
     });
   });
 
@@ -76,4 +108,3 @@ describe("export preview selection", () => {
     expect(formatExportMonthLabel({ year: 2026, month: 6 })).toBe("Juni 2026");
   });
 });
-

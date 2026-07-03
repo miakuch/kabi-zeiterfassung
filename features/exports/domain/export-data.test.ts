@@ -79,6 +79,7 @@ describe("project month export data", () => {
         projectCode: "NDR-24",
       },
       month: { year: 2026, month: 6 },
+      filteredTaskNames: ["Konzeption"],
       entries: [baseEntry, { ...baseEntry, id: "entry-2", durationMinutes: 30 }],
     });
 
@@ -87,6 +88,7 @@ describe("project month export data", () => {
       endDate: "2026-06-30",
       totalMinutes: 120,
       totalDecimalHours: 2,
+      filteredTaskNames: ["Konzeption"],
     });
     expect(JSON.stringify(data)).not.toContain("hourlyRate");
     expect(JSON.stringify(data)).not.toContain("amount");

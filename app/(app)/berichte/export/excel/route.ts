@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAdminSession } from "@/lib/auth/require-session";
 import { parseExportMonth } from "@/features/exports/domain/export-data";
 import { getProjectMonthExportData } from "@/features/exports/domain/queries";
+import type { ReportBillableFilter } from "@/features/reports/filters/domain";
 import {
   buildProjectMonthExcelFileName,
   createProjectMonthExcelWorkbook,
@@ -13,6 +14,10 @@ function errorResponse(message: string, status: number) {
   return NextResponse.json({ error: message }, { status });
 }
 
+function parseBillableFilter(value: string | null): ReportBillableFilter {
+  return value === "billable" || value === "non-billable" ? value : "all";
+}
+
 export async function GET(request: Request) {
   await requireAdminSession();
 
@@ -20,6 +25,12 @@ export async function GET(request: Request) {
   const projectId = requestUrl.searchParams.get("project") ?? "";
   const monthParam = requestUrl.searchParams.get("month") ?? "";
   const month = parseExportMonth(monthParam);
+  const filters = {
+    taskIds: requestUrl.searchParams.getAll("task"),
+    taskNames: requestUrl.searchParams.getAll("taskName"),
+    employeeIds: requestUrl.searchParams.getAll("employee"),
+    billable: parseBillableFilter(requestUrl.searchParams.get("billable")),
+  };
 
   if (!projectId || !month.ok) {
     return errorResponse("Projekt und Monat sind für den Export erforderlich.", 400);
@@ -28,6 +39,7 @@ export async function GET(request: Request) {
   const exportData = await getProjectMonthExportData({
     projectId,
     month: month.value,
+    filters,
   });
 
   if (!exportData) {

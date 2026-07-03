@@ -28,6 +28,7 @@ const exportData: ProjectMonthExportData = {
   endDate: "2026-06-30",
   totalMinutes: 90,
   totalDecimalHours: 1.5,
+  filteredTaskNames: [],
   entries: [
     {
       id: "entry-1",
@@ -90,6 +91,28 @@ describe("excel export route", () => {
     expect(response.status).toBe(400);
     expect(await response.json()).toEqual({
       error: "Keine abrechenbaren Einträge für diesen Projektmonat.",
+    });
+  });
+
+  it("passes report filters to the export data query", async () => {
+    await GET(
+      request(
+        "http://localhost:3000/berichte/export/excel?project=project-1&month=2026-06&task=task-1&taskName=Konzeption&employee=employee-1&billable=billable",
+      ),
+    );
+
+    expect(getProjectMonthExportData).toHaveBeenCalledWith({
+      projectId: "project-1",
+      month: {
+        year: 2026,
+        month: 6,
+      },
+      filters: {
+        taskIds: ["task-1"],
+        taskNames: ["Konzeption"],
+        employeeIds: ["employee-1"],
+        billable: "billable",
+      },
     });
   });
 

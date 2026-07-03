@@ -20,6 +20,7 @@ const exportData: ProjectMonthExportData = {
   endDate: "2026-06-30",
   totalMinutes: 120,
   totalDecimalHours: 2,
+  filteredTaskNames: [],
   entries: [
     {
       id: "entry-1",

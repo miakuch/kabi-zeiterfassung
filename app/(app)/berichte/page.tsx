@@ -20,8 +20,6 @@ type ReportsPageProps = {
     customer?: string | string[];
     employee?: string | string[];
     end?: string | string[];
-    exportMonth?: string | string[];
-    exportProject?: string | string[];
     project?: string | string[];
     quick?: string | string[];
     start?: string | string[];
@@ -29,16 +27,6 @@ type ReportsPageProps = {
     group?: string | string[];
   }>;
 };
-
-function preservedReportParams(params: Awaited<ReportsPageProps["searchParams"]>) {
-  return Object.entries(params)
-    .filter(([key, value]) => Boolean(value) && !key.startsWith("export"))
-    .flatMap(([name, value]) =>
-      (Array.isArray(value) ? value : [value]).flatMap((item) =>
-        item ? [{ name, value: item }] : [],
-      ),
-    );
-}
 
 function paramsHref(
   params: Awaited<ReportsPageProps["searchParams"]>,
@@ -83,6 +71,35 @@ function chartGroupLinks(
   }));
 }
 
+function selectedTaskNames({
+  entries,
+  taskIds,
+  tasks,
+}: {
+  entries: Array<{ taskId: string; taskName: string }>;
+  taskIds: string[];
+  tasks: Array<{ id: string; name: string }>;
+}) {
+  if (taskIds.length === 0) {
+    return [];
+  }
+
+  const optionTaskNames = tasks
+    .filter((task) => taskIds.includes(task.id))
+    .map((task) => task.name)
+    .sort((a, b) => a.localeCompare(b, "de"));
+
+  if (optionTaskNames.length > 0) {
+    return optionTaskNames;
+  }
+
+  return [...new Set(
+    entries
+      .filter((entry) => taskIds.includes(entry.taskId))
+      .map((entry) => entry.taskName),
+  )].sort((a, b) => a.localeCompare(b, "de"));
+}
+
 function ReportsLoadError() {
   return (
     <section className="grid gap-6">
@@ -113,35 +130,14 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     Array.isArray(params.group) ? params.group[0] : params.group,
     employee.role,
   );
-  const exportSelection = resolveExportPreviewSelection({
-    exportProjectId: Array.isArray(params.exportProject)
-      ? params.exportProject[0]
-      : params.exportProject,
-    exportMonth: Array.isArray(params.exportMonth)
-      ? params.exportMonth[0]
-      : params.exportMonth,
-    reportProjectId:
-      filters.projectIds.length === 1 ? filters.projectIds[0] : "",
-    reportStartDate: filters.startDate,
-    reportEndDate: filters.endDate,
-  });
-  const exportPreviewPromise =
-    employee.role === "admin" && exportSelection.projectId && exportSelection.month
-      ? getProjectMonthExportData({
-          projectId: exportSelection.projectId,
-          month: exportSelection.month,
-        })
-      : Promise.resolve(null);
-  const [optionsResult, overviewResult, exportPreviewResult] =
-    await Promise.allSettled([
-      getReportFilterOptions(employee),
-      getReportOverview({
-        employee,
-        filters,
-        grouping,
-      }),
-      exportPreviewPromise,
-    ]);
+  const [optionsResult, overviewResult] = await Promise.allSettled([
+    getReportFilterOptions(employee),
+    getReportOverview({
+      employee,
+      filters,
+      grouping,
+    }),
+  ]);
 
   if (optionsResult.status === "rejected" || overviewResult.status === "rejected") {
     console.error("Reports page failed", {
@@ -154,12 +150,42 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     return <ReportsLoadError />;
   }
 
+  const options = optionsResult.value;
+  const overview = overviewResult.value;
+  const exportSelection = resolveExportPreviewSelection({
+    customerIds: filters.customerIds,
+    projectIds: filters.projectIds,
+    taskIds: filters.taskIds,
+    options,
+    reportStartDate: filters.startDate,
+    reportEndDate: filters.endDate,
+  });
+  const taskNames = selectedTaskNames({
+    entries: overview.entries,
+    taskIds: filters.taskIds,
+    tasks: options.tasks,
+  });
+  const exportPreviewResult =
+    employee.role === "admin" && exportSelection.projectId && exportSelection.month
+      ? await getProjectMonthExportData({
+          projectId: exportSelection.projectId,
+          month: exportSelection.month,
+          filters: {
+            taskIds: filters.taskIds,
+            taskNames,
+            employeeIds: filters.employeeIds,
+            billable: filters.billable,
+          },
+        }).then(
+          (preview) => ({ status: "fulfilled" as const, value: preview }),
+          (reason) => ({ status: "rejected" as const, reason }),
+        )
+      : { status: "fulfilled" as const, value: null };
+
   if (exportPreviewResult.status === "rejected") {
     console.error("Report export preview failed", exportPreviewResult.reason);
   }
 
-  const options = optionsResult.value;
-  const overview = overviewResult.value;
   const exportPreview =
     exportPreviewResult.status === "fulfilled" ? exportPreviewResult.value : null;
 
@@ -198,19 +224,19 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
         groupings={chartGroupLinks(params, overview.availableGroupings)}
       />
 
-      {employee.role === "admin" ? (
-        <ExportPreviewPanel
-          options={options}
-          preservedParams={preservedReportParams(params)}
-          preview={exportPreview}
-          selection={exportSelection}
-        />
-      ) : null}
-
       <ReportTable
         entries={overview.entries}
         role={employee.role}
       />
+
+      {employee.role === "admin" ? (
+        <ExportPreviewPanel
+          filters={filters}
+          preview={exportPreview}
+          selection={exportSelection}
+          taskNames={taskNames}
+        />
+      ) : null}
     </section>
   );
 }

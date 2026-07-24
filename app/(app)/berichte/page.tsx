@@ -7,10 +7,14 @@ import { ReportFilters } from "@/features/reports/filters/report-filters";
 import { parseReportFilters } from "@/features/reports/filters/domain";
 import { getReportFilterOptions } from "@/features/reports/filters/queries";
 import { ReportSummaryCards } from "@/features/reports/summary/report-summary-cards";
-import type { ReportChartGrouping } from "@/features/reports/summary/domain";
+import type {
+  ReportChartGrouping,
+  ReportTimeGranularity,
+} from "@/features/reports/summary/domain";
 import {
   getReportOverview,
   parseReportChartGrouping,
+  parseReportTimeGranularity,
 } from "@/features/reports/summary/queries";
 import { ReportTable } from "@/features/reports/table/report-table";
 
@@ -25,6 +29,7 @@ type ReportsPageProps = {
     start?: string | string[];
     task?: string | string[];
     group?: string | string[];
+    granularity?: string | string[];
   }>;
 };
 
@@ -67,7 +72,21 @@ function chartGroupLinks(
 ) {
   return groupings.map((grouping) => ({
     ...grouping,
-    href: paramsHref(params, { group: grouping.value }),
+    href: paramsHref(params, { group: grouping.value, breakdown: null }),
+  }));
+}
+
+function timeGranularityLinks(
+  params: Awaited<ReportsPageProps["searchParams"]>,
+  granularities: Array<{ value: ReportTimeGranularity; label: string }>,
+) {
+  return granularities.map((granularity) => ({
+    ...granularity,
+    href: paramsHref(params, {
+      group: "time",
+      breakdown: null,
+      granularity: granularity.value,
+    }),
   }));
 }
 
@@ -130,12 +149,18 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     Array.isArray(params.group) ? params.group[0] : params.group,
     employee.role,
   );
+  const timeGranularity = parseReportTimeGranularity(
+    Array.isArray(params.granularity)
+      ? params.granularity[0]
+      : params.granularity,
+  );
   const [optionsResult, overviewResult] = await Promise.allSettled([
     getReportFilterOptions(employee),
     getReportOverview({
       employee,
       filters,
       grouping,
+      timeGranularity,
     }),
   ]);
 
@@ -220,8 +245,13 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
 
       <ReportChart
         activeGrouping={overview.grouping}
+        activeTimeGranularity={overview.timeGranularity}
         data={overview.chartData}
         groupings={chartGroupLinks(params, overview.availableGroupings)}
+        timeGranularities={timeGranularityLinks(
+          params,
+          overview.availableTimeGranularities,
+        )}
       />
 
       <ReportTable

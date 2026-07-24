@@ -11,6 +11,7 @@ const entry: ReportEntry = {
   projectId: "p1",
   projectName: "Relaunch",
   projectCode: "NDR-24",
+  projectColor: "#2498ac",
   taskId: "t1",
   taskName: "Konzeption",
   description: "Workshop",

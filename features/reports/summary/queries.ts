@@ -12,6 +12,7 @@ import {
   type ReportChartPoint,
   type ReportEntry,
   type ReportSummary,
+  type ReportTimeGranularity,
 } from "./domain";
 
 export type ReportOverview = {
@@ -19,8 +20,13 @@ export type ReportOverview = {
   summary: ReportSummary;
   chartData: ReportChartPoint[];
   grouping: ReportChartGrouping;
+  timeGranularity: ReportTimeGranularity;
   availableGroupings: Array<{
     value: ReportChartGrouping;
+    label: string;
+  }>;
+  availableTimeGranularities: Array<{
+    value: ReportTimeGranularity;
     label: string;
   }>;
 };
@@ -34,6 +40,7 @@ type RelatedProject = {
   id: string;
   name: string;
   code: string | null;
+  color: string;
   customers: RelatedCustomer | RelatedCustomer[] | null;
 };
 
@@ -98,6 +105,14 @@ function safeGroupings(role: CurrentEmployee["role"]) {
     : groupings;
 }
 
+function safeTimeGranularities(): ReportOverview["availableTimeGranularities"] {
+  return [
+    { value: "day", label: "Tag" },
+    { value: "week", label: "Woche" },
+    { value: "month", label: "Monat" },
+  ];
+}
+
 export function parseReportChartGrouping(
   value: string | undefined,
   role: CurrentEmployee["role"],
@@ -107,6 +122,16 @@ export function parseReportChartGrouping(
   return allowed.has(value as ReportChartGrouping)
     ? (value as ReportChartGrouping)
     : "project";
+}
+
+export function parseReportTimeGranularity(
+  value: string | undefined,
+): ReportTimeGranularity {
+  const allowed = new Set(safeTimeGranularities().map((granularity) => granularity.value));
+
+  return allowed.has(value as ReportTimeGranularity)
+    ? (value as ReportTimeGranularity)
+    : "day";
 }
 
 function amountForEntry({
@@ -155,10 +180,12 @@ function emptyReportOverview({
   employee,
   filters,
   grouping,
+  timeGranularity,
 }: {
   employee: CurrentEmployee;
   filters: ReportFilterState;
   grouping: ReportChartGrouping;
+  timeGranularity: ReportTimeGranularity;
 }): ReportOverview {
   const entries: ReportEntry[] = [];
 
@@ -168,11 +195,14 @@ function emptyReportOverview({
     chartData: buildReportChartData({
       entries,
       grouping,
+      timeGranularity,
       startDate: filters.startDate,
       endDate: filters.endDate,
     }),
     grouping,
+    timeGranularity,
     availableGroupings: safeGroupings(employee.role),
+    availableTimeGranularities: safeTimeGranularities(),
   };
 }
 
@@ -245,6 +275,7 @@ function toReportEntry(row: TimeEntryRow): ReportEntry | null {
     projectId: project.id,
     projectName: project.name,
     projectCode: project.code,
+    projectColor: project.color,
     taskId: row.task_id,
     taskName: task.name,
     description: row.description,
@@ -261,10 +292,12 @@ export async function getReportOverview({
   employee,
   filters,
   grouping,
+  timeGranularity,
 }: {
   employee: CurrentEmployee;
   filters: ReportFilterState;
   grouping: ReportChartGrouping;
+  timeGranularity: ReportTimeGranularity;
 }): Promise<ReportOverview> {
   noStore();
 
@@ -302,14 +335,19 @@ export async function getReportOverview({
     );
 
     if (taskIds.length === 0) {
-      return emptyReportOverview({ employee, filters, grouping });
+      return emptyReportOverview({
+        employee,
+        filters,
+        grouping,
+        timeGranularity,
+      });
     }
   }
 
   let query = supabase
     .from("time_entries")
     .select(
-      "id, employee_id, task_id, description, work_date, start_time, end_time, duration_minutes, billable, tasks(id, name, project_id, projects(id, name, code, customers(id, name))), employees!time_entries_employee_id_fkey(id, name)",
+      "id, employee_id, task_id, description, work_date, start_time, end_time, duration_minutes, billable, tasks(id, name, project_id, projects(id, name, code, color, customers(id, name))), employees!time_entries_employee_id_fkey(id, name)",
     )
     .gte("work_date", filters.startDate)
     .lte("work_date", filters.endDate)
@@ -357,10 +395,13 @@ export async function getReportOverview({
     chartData: buildReportChartData({
       entries,
       grouping,
+      timeGranularity,
       startDate: filters.startDate,
       endDate: filters.endDate,
     }),
     grouping,
+    timeGranularity,
     availableGroupings: safeGroupings(employee.role),
+    availableTimeGranularities: safeTimeGranularities(),
   };
 }

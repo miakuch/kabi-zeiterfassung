@@ -25,7 +25,9 @@ import { initialTimeEntryEditActionState } from "./action-state";
 import {
   formatDuration,
   formatGermanDate,
+  groupTimeEntryDaysByWeek,
   type TimeEntryListGroup,
+  type TimeEntryListWeekGroup,
 } from "./domain";
 import type {
   TimeEntryListItem,
@@ -274,6 +276,57 @@ function DayGroup({
   );
 }
 
+function WeekGroup({
+  expandedEntryIds,
+  onDelete,
+  onDuplicate,
+  onEdit,
+  onToggleExpanded,
+  week,
+}: {
+  expandedEntryIds: Set<string>;
+  onDelete: (entry: TimeEntryListItem) => void;
+  onDuplicate: (entry: TimeEntryListItem) => void;
+  onEdit: (entry: TimeEntryListItem) => void;
+  onToggleExpanded: (entryId: string) => void;
+  week: TimeEntryListWeekGroup<TimeEntryListItem>;
+}) {
+  return (
+    <section className="grid gap-3 rounded-md border border-border/70 bg-background/60 p-3">
+      <div className="flex flex-col gap-2 border-b pb-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h3 className="text-sm font-semibold text-foreground">{week.weekLabel}</h3>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {week.dateRangeLabel}
+          </p>
+        </div>
+        <div className="flex items-baseline justify-between gap-3 sm:justify-end">
+          <span className="text-xs font-medium text-muted-foreground">
+            Summe Woche
+          </span>
+          <span className="font-mono text-base font-semibold">
+            {formatDuration(week.totalDurationMinutes)}
+          </span>
+        </div>
+      </div>
+
+      <div className="grid gap-4">
+        {week.days.map((group) => (
+          <DayGroup
+            expandedEntryIds={expandedEntryIds}
+            group={group}
+            key={group.workDate}
+            onDelete={onDelete}
+            onDuplicate={onDuplicate}
+            onEdit={onEdit}
+            onToggleExpanded={onToggleExpanded}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export function TimeEntriesList({ result, tasks }: TimeEntriesListProps) {
   const [editor, setEditor] = useState<EditorState>(null);
   const [deleteCandidate, setDeleteCandidate] =
@@ -290,6 +343,10 @@ export function TimeEntriesList({ result, tasks }: TimeEntriesListProps) {
   const tasksById = useMemo(
     () => new Map(tasks.map((task) => [task.id, task])),
     [tasks],
+  );
+  const weekGroups = useMemo(
+    () => groupTimeEntryDaysByWeek(result.groups),
+    [result.groups],
   );
 
   function errorClass(field: keyof typeof fieldLabels) {
@@ -342,17 +399,17 @@ export function TimeEntriesList({ result, tasks }: TimeEntriesListProps) {
         </form>
       </div>
 
-      {result.groups.length > 0 ? (
+      {weekGroups.length > 0 ? (
         <div className="grid gap-5">
-          {result.groups.map((group) => (
-            <DayGroup
+          {weekGroups.map((week) => (
+            <WeekGroup
               expandedEntryIds={expandedEntryIds}
-              group={group}
-              key={group.workDate}
+              key={week.weekKey}
               onDelete={setDeleteCandidate}
               onDuplicate={(entry) => setEditor({ mode: "duplicate", entry })}
               onEdit={(entry) => setEditor({ mode: "edit", entry })}
               onToggleExpanded={toggleExpandedEntry}
+              week={week}
             />
           ))}
         </div>

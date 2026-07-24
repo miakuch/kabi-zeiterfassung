@@ -30,6 +30,27 @@ function timesPath(
   return `/zeiten?${searchParams.toString()}`;
 }
 
+async function upsertTimeEntryPreferencesForEmployee({
+  employeeId,
+  entryMode,
+  manualMode,
+}: {
+  employeeId: string;
+  entryMode: EntryMode;
+  manualMode: ManualEntryMode;
+}) {
+  const supabase = await createSupabaseServerClient();
+
+  await supabase.from("user_preferences").upsert(
+    {
+      employee_id: employeeId,
+      last_entry_mode: entryMode,
+      last_manual_mode: manualMode,
+    },
+    { onConflict: "employee_id" },
+  );
+}
+
 export async function updateTimeEntryPreferences(input: {
   entryMode: EntryMode;
   manualMode: ManualEntryMode;
@@ -41,15 +62,11 @@ export async function updateTimeEntryPreferences(input: {
     return;
   }
 
-  const supabase = await createSupabaseServerClient();
-  await supabase.from("user_preferences").upsert(
-    {
-      employee_id: employee.id,
-      last_entry_mode: parsed.data.entryMode,
-      last_manual_mode: parsed.data.manualMode,
-    },
-    { onConflict: "employee_id" },
-  );
+  await upsertTimeEntryPreferencesForEmployee({
+    employeeId: employee.id,
+    entryMode: parsed.data.entryMode,
+    manualMode: parsed.data.manualMode,
+  });
 }
 
 export async function createManualTimeEntry(
@@ -125,15 +142,22 @@ export async function createManualTimeEntry(
     };
   }
 
-  const { error: segmentError } = await addTimeEntrySegment({
-    entryId: data.id as string,
-    segment: {
-      workDate: parsed.value.workDate,
-      startTime: parsed.value.startTime,
-      endTime: parsed.value.endTime,
-      durationMinutes: parsed.value.durationMinutes,
-    },
-  });
+  const [{ error: segmentError }] = await Promise.all([
+    addTimeEntrySegment({
+      entryId: data.id as string,
+      segment: {
+        workDate: parsed.value.workDate,
+        startTime: parsed.value.startTime,
+        endTime: parsed.value.endTime,
+        durationMinutes: parsed.value.durationMinutes,
+      },
+    }),
+    upsertTimeEntryPreferencesForEmployee({
+      employeeId: employee.id,
+      entryMode: "manual",
+      manualMode,
+    }),
+  ]);
 
   if (segmentError) {
     return {
@@ -141,11 +165,6 @@ export async function createManualTimeEntry(
       fieldErrors: {},
     };
   }
-
-  await updateTimeEntryPreferences({
-    entryMode: "manual",
-    manualMode,
-  });
 
   revalidatePath("/zeiten");
   redirect(timesPath(

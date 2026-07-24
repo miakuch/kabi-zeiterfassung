@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useMemo, useState } from "react";
 import {
   ChevronDown,
@@ -426,7 +427,9 @@ export function TimeEntriesList({ result, tasks }: TimeEntriesListProps) {
         <div className="flex gap-2">
           {result.hasPreviousPage ? (
             <Button asChild variant="outline">
-              <a href={pageHref(result.page - 1)}>Zurück</a>
+              <Link href={pageHref(result.page - 1)} scroll={false}>
+                Zurück
+              </Link>
             </Button>
           ) : (
             <Button disabled type="button" variant="outline">
@@ -435,7 +438,9 @@ export function TimeEntriesList({ result, tasks }: TimeEntriesListProps) {
           )}
           {result.hasNextPage ? (
             <Button asChild variant="outline">
-              <a href={pageHref(result.page + 1)}>Weiter</a>
+              <Link href={pageHref(result.page + 1)} scroll={false}>
+                Weiter
+              </Link>
             </Button>
           ) : (
             <Button disabled type="button" variant="outline">

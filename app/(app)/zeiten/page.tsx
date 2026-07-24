@@ -31,28 +31,33 @@ export default async function TimesPage({ searchParams }: TimesPageProps) {
     employeePromise,
     searchParams,
   ]);
-  const employeeOptions =
-    employee.role === "admin" ? await getActiveEmployeeOptions() : [];
+  const page = parseTimeEntriesPage(params.page);
+  const employeeOptionsPromise =
+    employee.role === "admin" ? getActiveEmployeeOptions() : Promise.resolve([]);
+  const preferencesPromise = getTimeEntryPreferences(employee.id);
+  const [employeeOptions, preferences] = await Promise.all([
+    employeeOptionsPromise,
+    preferencesPromise,
+  ]);
   const selectedEmployeeId = resolveSelectedTimeEntryEmployeeId({
     currentEmployeeId: employee.id,
     employeeOptions,
     isAdmin: employee.role === "admin",
     requestedEmployeeId: params.employee,
   });
-  const [preferences, timerDraft, taskItems] = await Promise.all([
-    getTimeEntryPreferences(employee.id),
+  const [timerDraft, taskItems, timeEntries] = await Promise.all([
     getCurrentTimerDraft(selectedEmployeeId),
     getTaskPickerItems({
       employeeId: selectedEmployeeId,
       query: "",
       limit: 500,
     }),
+    getOwnTimeEntryList({
+      employeeId: employee.id,
+      page,
+      pageSize: preferences.timeEntriesPageSize,
+    }),
   ]);
-  const timeEntries = await getOwnTimeEntryList({
-    employeeId: employee.id,
-    page: parseTimeEntriesPage(params.page),
-    pageSize: preferences.timeEntriesPageSize,
-  });
   const successMessages: Record<string, string> = {
     "zeit-aktualisiert": "Zeit wurde aktualisiert.",
     "zeit-dupliziert": "Eintrag wurde dupliziert.",

@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { requireEmployeeSession } from "@/lib/auth/require-session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { addTimeEntrySegment } from "@/features/time-entries/segments/actions";
@@ -15,20 +14,6 @@ import {
 import type { ManualEntryActionState } from "./action-state";
 import { resolveTimeEntryTargetEmployee } from "./target-employee";
 import { canBookTaskForEmployee } from "@/features/tasks/task-picker/bookable-task";
-
-function timesPath(
-  params: Record<string, string>,
-  targetEmployeeId?: string,
-  currentEmployeeId?: string,
-) {
-  const searchParams = new URLSearchParams(params);
-
-  if (targetEmployeeId && targetEmployeeId !== currentEmployeeId) {
-    searchParams.set("employee", targetEmployeeId);
-  }
-
-  return `/zeiten?${searchParams.toString()}`;
-}
 
 async function upsertTimeEntryPreferencesForEmployee({
   employeeId,
@@ -167,9 +152,9 @@ export async function createManualTimeEntry(
   }
 
   revalidatePath("/zeiten");
-  redirect(timesPath(
-    { success: "zeit-gespeichert" },
-    targetEmployee.employeeId,
-    employee.id,
-  ));
+  return {
+    formError: null,
+    fieldErrors: {},
+    successMessage: "Zeit wurde gespeichert.",
+  };
 }

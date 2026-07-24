@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useActionState, useEffect, useMemo, useState } from "react";
 import {
   ChevronDown,
   Copy,
@@ -92,8 +93,20 @@ function fieldErrorMessage(field: keyof typeof fieldLabels, error?: string) {
   return `${fieldLabels[field]} ist erforderlich.`;
 }
 
-function pageHref(page: number) {
-  return `/zeiten?page=${page}`;
+function pageHref(page: number, searchParams: URLSearchParams) {
+  const next = new URLSearchParams(searchParams.toString());
+
+  if (page <= 1) {
+    next.delete("page");
+  } else {
+    next.set("page", String(page));
+  }
+
+  next.delete("error");
+  next.delete("success");
+  const query = next.toString();
+
+  return query ? `/zeiten?${query}` : "/zeiten";
 }
 
 function DayGroup({
@@ -329,6 +342,8 @@ function WeekGroup({
 }
 
 export function TimeEntriesList({ result, tasks }: TimeEntriesListProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [editor, setEditor] = useState<EditorState>(null);
   const [deleteCandidate, setDeleteCandidate] =
     useState<TimeEntryListItem | null>(null);
@@ -349,6 +364,19 @@ export function TimeEntriesList({ result, tasks }: TimeEntriesListProps) {
     () => groupTimeEntryDaysByWeek(result.groups),
     [result.groups],
   );
+
+  useEffect(() => {
+    if (!editState?.successMessage) {
+      return;
+    }
+
+    router.refresh();
+    const timeoutId = window.setTimeout(() => {
+      setEditor(null);
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [editState, router]);
 
   function errorClass(field: keyof typeof fieldLabels) {
     return editFieldErrors[field]
@@ -376,7 +404,9 @@ export function TimeEntriesList({ result, tasks }: TimeEntriesListProps) {
         <div>
           <h2 className="text-lg font-semibold">Einträge</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            {result.totalCount} Einträge, neueste Tage zuerst.
+            {result.periodLabel}, neueste Tage zuerst.
+            {" "}
+            {result.entryCount} Einträge auf dieser Seite.
           </p>
         </div>
 
@@ -391,7 +421,7 @@ export function TimeEntriesList({ result, tasks }: TimeEntriesListProps) {
             name="pageSize"
             onChange={(event) => event.currentTarget.form?.requestSubmit()}
           >
-            {[50, 100, 250].map((pageSize) => (
+            {[50, 100].map((pageSize) => (
               <option key={pageSize} value={pageSize}>
                 {pageSize}
               </option>
@@ -399,6 +429,12 @@ export function TimeEntriesList({ result, tasks }: TimeEntriesListProps) {
           </select>
         </form>
       </div>
+
+      {safeEditState.successMessage ? (
+        <p className="rounded-md border border-primary/30 bg-primary/10 px-3 py-2 text-sm text-primary">
+          {safeEditState.successMessage}
+        </p>
+      ) : null}
 
       {weekGroups.length > 0 ? (
         <div className="grid gap-5">
@@ -422,12 +458,12 @@ export function TimeEntriesList({ result, tasks }: TimeEntriesListProps) {
 
       <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-muted-foreground">
-          Seite {result.page} von {result.totalPages}
+          Seite {result.page}
         </p>
         <div className="flex gap-2">
           {result.hasPreviousPage ? (
             <Button asChild variant="outline">
-              <Link href={pageHref(result.page - 1)} scroll={false}>
+              <Link href={pageHref(result.page - 1, searchParams)} scroll={false}>
                 Zurück
               </Link>
             </Button>
@@ -438,7 +474,7 @@ export function TimeEntriesList({ result, tasks }: TimeEntriesListProps) {
           )}
           {result.hasNextPage ? (
             <Button asChild variant="outline">
-              <Link href={pageHref(result.page + 1)} scroll={false}>
+              <Link href={pageHref(result.page + 1, searchParams)} scroll={false}>
                 Weiter
               </Link>
             </Button>

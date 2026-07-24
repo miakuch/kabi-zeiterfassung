@@ -4,6 +4,7 @@ import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdminSession } from "@/lib/auth/require-session";
 import {
+  CACHE_TAG_EMPLOYEE_OPTIONS,
   CACHE_TAG_PROJECT_DETAIL_OPTIONS,
   CACHE_TAG_REPORT_FILTER_OPTIONS,
 } from "@/lib/cache/tags";
@@ -45,6 +46,7 @@ function isAuthEmailConflict(error: { code?: string; message?: string }) {
 }
 
 function revalidateEmployeeMasterData() {
+  updateTag(CACHE_TAG_EMPLOYEE_OPTIONS);
   updateTag(CACHE_TAG_PROJECT_DETAIL_OPTIONS);
   updateTag(CACHE_TAG_REPORT_FILTER_OPTIONS);
 }

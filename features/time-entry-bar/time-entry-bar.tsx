@@ -302,10 +302,13 @@ export function TimeEntryBar({
     timerStopState.draft ??
     (timerStopState.formError ? null : optimisticStopDraft) ??
     timerStartState.draft ??
-    (timerStartState.formError ? null : optimisticStartDraft) ??
-    timerDraft;
+      (timerStartState.formError ? null : optimisticStartDraft) ??
+      timerDraft;
   const localSuccessMessage =
-    timerStopState.successMessage ?? timerStartState.successMessage ?? null;
+    manualState.successMessage ??
+    timerStopState.successMessage ??
+    timerStartState.successMessage ??
+    null;
   const activeSuccessMessage = localSuccessMessage ?? successMessage ?? null;
   const visibleSuccessMessage =
     activeSuccessMessage && dismissedSuccessMessage !== activeSuccessMessage
@@ -391,6 +394,23 @@ export function TimeEntryBar({
 
     return () => window.clearTimeout(timeoutId);
   }, [activeSuccessMessage, pathname, router, searchParams, successMessage]);
+
+  useEffect(() => {
+    if (!actionState?.successMessage) {
+      return;
+    }
+
+    router.refresh();
+    const timeoutId = window.setTimeout(() => {
+      setDismissedSuccessMessage(null);
+      setDescription("");
+      setStartTime("");
+      setEndTime("");
+      setDurationMinutes("");
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [actionState, router]);
 
   function persistPreferences(nextEntryMode: EntryMode, nextManualMode = manualMode) {
     startTransition(() => {

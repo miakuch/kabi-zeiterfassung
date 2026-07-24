@@ -1,28 +1,12 @@
 import "server-only";
 
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import {
+  getTaskPickerRowsCached,
+  type TaskPickerRow,
+} from "@/features/tasks/task-picker/queries";
 
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
-type RelatedCustomer = {
-  status: "active" | "inactive";
-};
-
-type RelatedProject = {
-  status: "active" | "inactive";
-  customers: RelatedCustomer | RelatedCustomer[] | null;
-};
-
-type BookableTaskRow = {
-  id: string;
-  status: "active" | "inactive";
-  assignment_mode: "all" | "selected";
-  task_assignments: Array<{
-    employee_id: string;
-  }> | null;
-  projects: RelatedProject | RelatedProject[] | null;
-};
 
 function firstRelated<T>(value: T | T[] | null) {
   return Array.isArray(value) ? (value[0] ?? null) : value;
@@ -39,21 +23,14 @@ export async function canBookTaskForEmployee({
     return false;
   }
 
-  const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase
-    .from("tasks")
-    .select(
-      "id, status, assignment_mode, task_assignments(employee_id), projects(status, customers(status))",
-    )
-    .eq("id", taskId)
-    .maybeSingle();
+  const rows = await getTaskPickerRowsCached();
+  const task = rows.find((row) => row.id === taskId);
 
-  if (error || !data) {
+  if (!task) {
     return false;
   }
 
-  const task = data as unknown as BookableTaskRow;
-  const project = firstRelated(task.projects);
+  const project = firstRelated((task as TaskPickerRow).projects);
   const customer = firstRelated(project?.customers ?? null);
 
   if (

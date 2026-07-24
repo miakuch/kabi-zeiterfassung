@@ -203,7 +203,7 @@ Felder:
 Regeln:
 
 - Speichert zuletzt genutzten Erfassungsmodus
-- Speichert Seitengroesse 50/100/250
+- Speichert Seitengroesse 50/100
 
 ## Nicht als Tabelle in V1
 

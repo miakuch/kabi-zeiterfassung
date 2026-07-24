@@ -3,7 +3,10 @@ import "server-only";
 import { unstable_noStore as noStore } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { EntryMode, ManualEntryMode } from "./schema";
-import type { TimeEntriesPageSize } from "@/features/time-entries/list/queries";
+import {
+  parseTimeEntriesPageSize,
+  type TimeEntriesPageSize,
+} from "@/features/time-entries/list/queries";
 
 export type TimeEntryPreferences = {
   lastEntryMode: EntryMode;
@@ -38,7 +41,9 @@ export async function getTimeEntryPreferences(
   return {
     lastEntryMode: preferences?.last_entry_mode ?? "timer",
     lastManualMode: preferences?.last_manual_mode ?? "end",
-    timeEntriesPageSize: preferences?.time_entries_page_size ?? 50,
+    timeEntriesPageSize: parseTimeEntriesPageSize(
+      String(preferences?.time_entries_page_size ?? 50),
+    ),
   };
 }
 

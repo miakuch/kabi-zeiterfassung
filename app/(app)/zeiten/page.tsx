@@ -24,6 +24,30 @@ type TimesPageProps = {
   }>;
 };
 
+function isoDate(value: Date) {
+  return value.toISOString().slice(0, 10);
+}
+
+function currentAndPreviousMonthPeriod(today: string) {
+  const [year, month] = today.split("-").map(Number);
+  const safeDate =
+    year && month
+      ? new Date(Date.UTC(year, month - 1, 1))
+      : new Date();
+  const startDate = new Date(
+    Date.UTC(safeDate.getUTCFullYear(), safeDate.getUTCMonth() - 1, 1),
+  );
+  const endDate = new Date(
+    Date.UTC(safeDate.getUTCFullYear(), safeDate.getUTCMonth() + 1, 0),
+  );
+
+  return {
+    startDate: isoDate(startDate),
+    endDate: isoDate(endDate),
+    label: "Aktueller und letzter Monat",
+  };
+}
+
 export default async function TimesPage({ searchParams }: TimesPageProps) {
   const employeePromise = requireEmployeeSession();
 
@@ -32,6 +56,8 @@ export default async function TimesPage({ searchParams }: TimesPageProps) {
     searchParams,
   ]);
   const page = parseTimeEntriesPage(params.page);
+  const today = getTodayInBerlin();
+  const listPeriod = currentAndPreviousMonthPeriod(today);
   const employeeOptionsPromise =
     employee.role === "admin" ? getActiveEmployeeOptions() : Promise.resolve([]);
   const preferencesPromise = getTimeEntryPreferences(employee.id);
@@ -54,8 +80,11 @@ export default async function TimesPage({ searchParams }: TimesPageProps) {
     }),
     getOwnTimeEntryList({
       employeeId: employee.id,
+      endDate: listPeriod.endDate,
       page,
       pageSize: preferences.timeEntriesPageSize,
+      periodLabel: listPeriod.label,
+      startDate: listPeriod.startDate,
     }),
   ]);
   const successMessages: Record<string, string> = {
@@ -109,7 +138,7 @@ export default async function TimesPage({ searchParams }: TimesPageProps) {
         selectedEmployeeId={selectedEmployeeId}
         successMessage={successMessage}
         tasks={taskItems}
-        today={getTodayInBerlin()}
+        today={today}
         timerDraft={timerDraft}
       />
 

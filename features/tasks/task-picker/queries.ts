@@ -1,7 +1,8 @@
 import "server-only";
 
-import { unstable_noStore as noStore } from "next/cache";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { unstable_cache } from "next/cache";
+import { CACHE_TAG_TASK_PICKER_ITEMS } from "@/lib/cache/tags";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import {
   buildTaskPickerLabels,
   taskPickerItemMatchesSearch,
@@ -33,7 +34,7 @@ type RelatedProject = {
   customers: RelatedCustomer | RelatedCustomer[] | null;
 };
 
-type TaskPickerRow = {
+export type TaskPickerRow = {
   id: string;
   name: string;
   default_billable: boolean;
@@ -96,6 +97,27 @@ function toTaskPickerItem(
   };
 }
 
+export const getTaskPickerRowsCached = unstable_cache(
+  async (): Promise<TaskPickerRow[]> => {
+    const admin = createSupabaseAdminClient();
+    const { data, error } = await admin
+      .from("tasks")
+      .select(
+        "id, name, default_billable, assignment_mode, status, task_assignments(employee_id), projects(id, name, code, color, status, customers(id, name, status))",
+      )
+      .eq("status", "active")
+      .limit(500);
+
+    if (error) {
+      throw new Error("Aufgaben konnten nicht geladen werden.");
+    }
+
+    return (data ?? []) as unknown as TaskPickerRow[];
+  },
+  ["task-picker-items"],
+  { tags: [CACHE_TAG_TASK_PICKER_ITEMS] },
+);
+
 export async function getTaskPickerItems({
   employeeId,
   query,
@@ -105,22 +127,9 @@ export async function getTaskPickerItems({
   query: string;
   limit?: number;
 }): Promise<TaskPickerItem[]> {
-  noStore();
+  const rows = await getTaskPickerRowsCached();
 
-  const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase
-    .from("tasks")
-    .select(
-      "id, name, default_billable, assignment_mode, status, task_assignments(employee_id), projects(id, name, code, color, status, customers(id, name, status))",
-    )
-    .eq("status", "active")
-    .limit(200);
-
-  if (error) {
-    throw new Error("Aufgaben konnten nicht geladen werden.");
-  }
-
-  return ((data ?? []) as unknown as TaskPickerRow[])
+  return rows
     .flatMap((row) => {
       const item = toTaskPickerItem(row, employeeId);
 

@@ -4,7 +4,7 @@ import { unstable_noStore as noStore } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { groupTimeEntriesByDate, type TimeEntryListGroup } from "./domain";
 
-export type TimeEntriesPageSize = 50 | 100 | 250;
+export type TimeEntriesPageSize = 50 | 100;
 
 export type TimeEntryListItem = {
   id: string;
@@ -35,10 +35,10 @@ export type TimeEntryListResult = {
   groups: Array<TimeEntryListGroup<TimeEntryListItem>>;
   page: number;
   pageSize: TimeEntriesPageSize;
-  totalCount: number;
-  totalPages: number;
+  entryCount: number;
   hasPreviousPage: boolean;
   hasNextPage: boolean;
+  periodLabel: string;
 };
 
 type RelatedCustomer = {
@@ -84,7 +84,7 @@ function firstRelated<T>(value: T | T[] | null) {
 }
 
 function clampPageSize(value: number): TimeEntriesPageSize {
-  if (value === 100 || value === 250) {
+  if (value === 100) {
     return value;
   }
 
@@ -153,26 +153,33 @@ function toListItem(row: TimeEntryRow): TimeEntryListItem | null {
 
 export async function getOwnTimeEntryList({
   employeeId,
+  endDate,
   page,
   pageSize,
+  periodLabel,
+  startDate,
 }: {
   employeeId: string;
+  endDate: string;
   page: number;
   pageSize: TimeEntriesPageSize;
+  periodLabel: string;
+  startDate: string;
 }): Promise<TimeEntryListResult> {
   noStore();
 
   const safePage = Math.max(1, page);
   const from = (safePage - 1) * pageSize;
-  const to = from + pageSize - 1;
+  const to = from + pageSize;
   const supabase = await createSupabaseServerClient();
-  const { data, count, error } = await supabase
+  const { data, error } = await supabase
     .from("time_entries")
     .select(
       "id, task_id, description, work_date, start_time, end_time, duration_minutes, billable, tasks(id, name, projects(name, code, color, customers(name))), time_entry_segments(id, work_date, start_time, end_time, duration_minutes)",
-      { count: "exact" },
     )
     .eq("employee_id", employeeId)
+    .gte("work_date", startDate)
+    .lte("work_date", endDate)
     .order("work_date", { ascending: false })
     .order("start_time", { ascending: false })
     .range(from, to);
@@ -181,30 +188,21 @@ export async function getOwnTimeEntryList({
     throw new Error("Zeiteintraege konnten nicht geladen werden.");
   }
 
-  const entries = ((data ?? []) as unknown as TimeEntryRow[]).flatMap((row) => {
+  const rows = ((data ?? []) as unknown as TimeEntryRow[]).slice(0, pageSize);
+  const entries = rows.flatMap((row) => {
     const entry = toListItem(row);
 
     return entry ? [entry] : [];
   });
-  const totalCount = count ?? 0;
-  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
-  const clampedPage = Math.min(safePage, totalPages);
-
-  if (clampedPage !== safePage) {
-    return getOwnTimeEntryList({
-      employeeId,
-      page: clampedPage,
-      pageSize,
-    });
-  }
+  const hasNextPage = (data ?? []).length > pageSize;
 
   return {
     groups: groupTimeEntriesByDate(entries),
-    page: clampedPage,
+    page: safePage,
     pageSize,
-    totalCount,
-    totalPages,
-    hasPreviousPage: clampedPage > 1,
-    hasNextPage: clampedPage < totalPages,
+    entryCount: entries.length,
+    hasPreviousPage: safePage > 1,
+    hasNextPage,
+    periodLabel,
   };
 }

@@ -8,9 +8,11 @@ export type ManualEntryActionState = {
   fieldErrors: Partial<
     Record<ManualTimeEntryFieldError, ManualTimeEntryValidationError>
   >;
+  successMessage?: string | null;
 };
 
 export const initialManualEntryActionState: ManualEntryActionState = {
   formError: null,
   fieldErrors: {},
+  successMessage: null,
 };

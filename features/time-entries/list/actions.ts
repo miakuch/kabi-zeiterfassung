@@ -143,7 +143,11 @@ export async function upsertTimeEntryFromListAction(
     }
 
     revalidatePath("/zeiten");
-    redirect(successPath("zeit-dupliziert"));
+    return {
+      formError: null,
+      fieldErrors: {},
+      successMessage: "Eintrag wurde dupliziert.",
+    };
   }
 
   if (!entryId) {
@@ -193,7 +197,11 @@ export async function upsertTimeEntryFromListAction(
   }
 
   revalidatePath("/zeiten");
-  redirect(successPath("zeit-aktualisiert"));
+  return {
+    formError: null,
+    fieldErrors: {},
+    successMessage: "Zeit wurde aktualisiert.",
+  };
 }
 
 export async function toggleTimeEntryBillableAction(formData: FormData) {

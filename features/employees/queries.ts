@@ -1,6 +1,8 @@
 import "server-only";
 
-import { unstable_noStore as noStore } from "next/cache";
+import { unstable_cache, unstable_noStore as noStore } from "next/cache";
+import { CACHE_TAG_EMPLOYEE_OPTIONS } from "@/lib/cache/tags";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export type EmployeeListItem = {
@@ -21,25 +23,31 @@ type EmployeeRow = {
   auth_user_id: string | null;
 };
 
+const getActiveEmployeeOptionsCached = unstable_cache(
+  async () => {
+    const admin = createSupabaseAdminClient();
+    const { data, error } = await admin
+      .from("employees")
+      .select("id, name, email")
+      .eq("status", "active")
+      .order("name", { ascending: true });
+
+    if (error) {
+      throw new Error("Mitarbeitende konnten nicht geladen werden.");
+    }
+
+    return (data ?? []).map((employee) => ({
+      id: employee.id as string,
+      name: employee.name as string,
+      email: employee.email as string,
+    }));
+  },
+  ["active-employee-options"],
+  { tags: [CACHE_TAG_EMPLOYEE_OPTIONS] },
+);
+
 export async function getActiveEmployeeOptions() {
-  noStore();
-
-  const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase
-    .from("employees")
-    .select("id, name, email")
-    .eq("status", "active")
-    .order("name", { ascending: true });
-
-  if (error) {
-    throw new Error("Mitarbeitende konnten nicht geladen werden.");
-  }
-
-  return (data ?? []).map((employee) => ({
-    id: employee.id as string,
-    name: employee.name as string,
-    email: employee.email as string,
-  }));
+  return getActiveEmployeeOptionsCached();
 }
 
 export async function getEmployees(): Promise<EmployeeListItem[]> {

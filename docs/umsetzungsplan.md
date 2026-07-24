@@ -107,7 +107,7 @@
   gestoppte Entwuerfe korrigieren, Speichern als Zeiteintrag und Verwerfen.
 - Die Eintragsliste ist umgesetzt: eigene Eintraege, Tagesgruppen mit
   Tagesdauer, neueste Tage zuerst, innerhalb des Tages spaeteste Startzeit
-  zuerst, 50/100/250 Pagination und Aktionen fuer Bearbeiten, Loeschen,
+  zuerst, 50/100 Pagination und Aktionen fuer Bearbeiten, Loeschen,
   Duplizieren, Fortsetzen und Abrechenbar-Umschaltung.
 - Sprint 7 ist begonnen: Die globalen Berichtsfilter sind umgesetzt mit
   Quickfiltern, Kalenderdaten, Kunde, Projekt, Aufgabe, Abrechenbar und

@@ -338,7 +338,7 @@ Testfaelle:
 - Liste mit mehreren Tagen pruefen.
 - Sortierung innerhalb eines Tages pruefen.
 - Tages-Gesamtdauer pruefen.
-- Pagination 50, 100 und 250 testen.
+- Pagination 50 und 100 testen.
 - Eintrag bearbeiten.
 - Eintrag loeschen und Sicherheitsabfrage abbrechen.
 - Eintrag loeschen und bestaetigen.
@@ -549,4 +549,3 @@ No-Go gilt bei:
 - unzuverlaessigem Speichern von Zeiten.
 - kaputten Projekt-Zeitnachweisen.
 - Production zeigt nicht den aktuellen App-Stand.
-

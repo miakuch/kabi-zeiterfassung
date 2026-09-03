@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useMemo, useState } from "react";
+import { useFormStatus } from "react-dom";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
   flexRender,
@@ -10,12 +11,15 @@ import {
   type ColumnDef,
   type SortingState,
 } from "@tanstack/react-table";
-import { ArrowDownUp, Pencil, Save, X } from "lucide-react";
+import { ArrowDownUp, Pencil, Save, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { EmployeeRole } from "@/lib/auth/require-session";
 import type { ReportEntry } from "../summary/domain";
 import { initialReportTimeEntryEditState } from "./action-state";
-import { updateReportTimeEntryAction } from "./actions";
+import {
+  deleteReportTimeEntryAction,
+  updateReportTimeEntryAction,
+} from "./actions";
 import {
   formatReportHours,
   reportDateSortValue,
@@ -41,6 +45,21 @@ function formatReportDate(value: string) {
   return value.split("-").reverse().join(".");
 }
 
+function DeleteSubmitButton() {
+  const { pending } = useFormStatus();
+
+  return (
+    <Button
+      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+      disabled={pending}
+      type="submit"
+    >
+      <Trash2 className="size-4" aria-hidden="true" />
+      {pending ? "Wird gelöscht …" : "Löschen"}
+    </Button>
+  );
+}
+
 export function ReportTable({
   entries,
   role,
@@ -51,6 +70,9 @@ export function ReportTable({
     { id: "date", desc: true },
   ]);
   const [editor, setEditor] = useState<ReportEntry | null>(null);
+  const [deleteCandidate, setDeleteCandidate] = useState<ReportEntry | null>(
+    null,
+  );
   const [editState, editAction, isSaving] = useActionState(
     updateReportTimeEntryAction,
     initialReportTimeEntryEditState,
@@ -127,18 +149,31 @@ export function ReportTable({
       },
       {
         id: "actions",
-        header: () => "Aktion",
+        header: () => "Aktionen",
         enableSorting: false,
         cell: ({ row }) => (
-          <Button
-            className="size-9 px-0"
-            onClick={() => setEditor(row.original)}
-            type="button"
-            variant="outline"
-          >
-            <Pencil className="size-4" aria-hidden="true" />
-            <span className="sr-only">Eintrag bearbeiten</span>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              aria-label={`Eintrag bearbeiten: ${row.original.description}`}
+              className="size-11 px-0"
+              onClick={() => setEditor(row.original)}
+              title="Eintrag bearbeiten"
+              type="button"
+              variant="outline"
+            >
+              <Pencil className="size-4" aria-hidden="true" />
+            </Button>
+            <Button
+              aria-label={`Eintrag löschen: ${row.original.description}`}
+              className="size-11 px-0 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+              onClick={() => setDeleteCandidate(row.original)}
+              title="Eintrag löschen"
+              type="button"
+              variant="outline"
+            >
+              <Trash2 className="size-4" aria-hidden="true" />
+            </Button>
+          </div>
         ),
       },
     ],
@@ -158,7 +193,7 @@ export function ReportTable({
   });
 
   return (
-    <section className="grid gap-4 rounded-md border bg-card p-4 sm:p-5">
+    <section className="grid min-w-0 gap-4 rounded-md border bg-card p-4 sm:p-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 className="text-lg font-semibold">Detailtabelle</h2>
@@ -168,7 +203,7 @@ export function ReportTable({
         </div>
       </div>
 
-      <div className="max-w-full overflow-x-auto rounded-md border">
+      <div className="w-full max-w-full overflow-x-auto rounded-md border">
         <table className="w-full min-w-[980px] border-collapse text-sm">
           <thead className="bg-secondary text-secondary-foreground">
             {table.getHeaderGroups().map((headerGroup) => (
@@ -330,6 +365,45 @@ export function ReportTable({
                 </Button>
               </div>
             </form>
+          </div>
+        </div>
+      ) : null}
+
+      {deleteCandidate ? (
+        <div
+          aria-labelledby="delete-report-entry-title"
+          aria-modal="true"
+          className="fixed inset-0 z-50 grid place-items-center bg-foreground/20 p-4"
+          role="dialog"
+        >
+          <div className="grid w-full max-w-md gap-4 rounded-md border bg-card p-5 shadow-lg">
+            <div>
+              <h3 className="text-lg font-semibold" id="delete-report-entry-title">
+                Eintrag wirklich löschen?
+              </h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {formatReportDate(deleteCandidate.workDate)} ·{" "}
+                {deleteCandidate.employeeName} · {deleteCandidate.description}
+              </p>
+              <p className="mt-3 text-sm text-foreground">
+                Der Zeiteintrag wird vollständig und dauerhaft gelöscht.
+              </p>
+            </div>
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <Button
+                autoFocus
+                onClick={() => setDeleteCandidate(null)}
+                type="button"
+                variant="outline"
+              >
+                Abbrechen
+              </Button>
+              <form action={deleteReportTimeEntryAction}>
+                <input name="entryId" type="hidden" value={deleteCandidate.id} />
+                <input name="returnTo" type="hidden" value={returnTo} />
+                <DeleteSubmitButton />
+              </form>
+            </div>
           </div>
         </div>
       ) : null}

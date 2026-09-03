@@ -17,7 +17,67 @@ type ExistingTimeEntryRow = {
 };
 
 function safeReturnTo(value: string) {
-  return value.startsWith("/berichte") ? value : "/berichte";
+  return value === "/berichte" || value.startsWith("/berichte?")
+    ? value
+    : "/berichte";
+}
+
+function resultPath(
+  returnTo: string,
+  kind: "error" | "success",
+  code: string,
+) {
+  const [pathname, query = ""] = safeReturnTo(returnTo).split("?");
+  const params = new URLSearchParams(query);
+
+  params.delete("error");
+  params.delete("success");
+  params.set(kind, code);
+
+  return `${pathname}?${params.toString()}`;
+}
+
+export async function deleteReportTimeEntryAction(formData: FormData) {
+  const employee = await requireEmployeeSession();
+  const entryId = formValue(formData, "entryId");
+  const returnTo = safeReturnTo(formValue(formData, "returnTo"));
+
+  if (!entryId) {
+    redirect(resultPath(returnTo, "error", "zeit-ungueltig"));
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { data: existingData, error: existingError } = await supabase
+    .from("time_entries")
+    .select("employee_id")
+    .eq("id", entryId)
+    .maybeSingle();
+
+  if (
+    existingError ||
+    !existingData ||
+    (employee.role !== "admin" && existingData.employee_id !== employee.id)
+  ) {
+    redirect(resultPath(returnTo, "error", "zeit-ungueltig"));
+  }
+
+  let deleteQuery = supabase.from("time_entries").delete().eq("id", entryId);
+
+  if (employee.role !== "admin") {
+    deleteQuery = deleteQuery.eq("employee_id", employee.id);
+  }
+
+  const { data: deletedData, error: deleteError } = await deleteQuery
+    .select("id")
+    .maybeSingle();
+
+  revalidatePath("/berichte");
+  revalidatePath("/zeiten");
+  redirect(
+    deleteError || !deletedData
+      ? resultPath(returnTo, "error", "zeit-loeschen")
+      : resultPath(returnTo, "success", "zeit-geloescht"),
+  );
 }
 
 export async function updateReportTimeEntryAction(

@@ -1,4 +1,5 @@
 import { requireEmployeeSession } from "@/lib/auth/require-session";
+import { FlashMessage } from "@/components/flash-message";
 import { getProjectMonthExportData } from "@/features/exports/domain/queries";
 import { ExportPreviewPanel } from "@/features/exports/preview/export-preview-panel";
 import { resolveExportPreviewSelection } from "@/features/exports/preview/domain";
@@ -30,6 +31,8 @@ type ReportsPageProps = {
     task?: string | string[];
     group?: string | string[];
     granularity?: string | string[];
+    error?: string | string[];
+    success?: string | string[];
   }>;
 };
 
@@ -40,7 +43,7 @@ function paramsHref(
   const searchParams = new URLSearchParams();
 
   for (const [key, value] of Object.entries(params)) {
-    if (value && !(key in updates)) {
+    if (value && !(key in updates) && key !== "error" && key !== "success") {
       for (const item of Array.isArray(value) ? value : [value]) {
         if (item) {
           searchParams.append(key, item);
@@ -145,6 +148,18 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     searchParams,
   ]);
   const filters = parseReportFilters(params);
+  const successCode = Array.isArray(params.success)
+    ? params.success[0]
+    : params.success;
+  const errorCode = Array.isArray(params.error) ? params.error[0] : params.error;
+  const successMessage =
+    successCode === "zeit-geloescht" ? "Eintrag wurde gelöscht." : null;
+  const errorMessage =
+    errorCode === "zeit-loeschen"
+      ? "Eintrag konnte nicht gelöscht werden. Bitte versuche es erneut."
+      : errorCode === "zeit-ungueltig"
+        ? "Der Zeiteintrag wurde nicht gefunden oder darf nicht gelöscht werden."
+        : null;
   const grouping = parseReportChartGrouping(
     Array.isArray(params.group) ? params.group[0] : params.group,
     employee.role,
@@ -215,7 +230,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     exportPreviewResult.status === "fulfilled" ? exportPreviewResult.value : null;
 
   return (
-    <section className="grid gap-6">
+    <section className="grid min-w-0 gap-6">
       <div>
         <p className="text-sm font-medium text-muted-foreground">
           Auswertung
@@ -224,6 +239,17 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
           Berichte
         </h1>
       </div>
+
+      {errorMessage ? <FlashMessage message={errorMessage} /> : null}
+
+      {successMessage ? (
+        <p
+          className="rounded-md border border-primary/30 bg-primary/10 px-3 py-2 text-sm text-primary"
+          role="status"
+        >
+          {successMessage}
+        </p>
+      ) : null}
 
       <ReportFilters
         key={[

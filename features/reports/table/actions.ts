@@ -4,8 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireEmployeeSession } from "@/lib/auth/require-session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { replaceTimeEntrySegments } from "@/features/time-entries/segments/actions";
-import { calculateTimeEntryFromStartEnd } from "@/features/time/domain/time-calculation";
+import { validateTimeEntrySegments } from "@/features/time-entries/segments/domain";
 import { formValue } from "@/features/time-entry-bar/schema";
 import type { ReportTimeEntryEditState } from "./action-state";
 
@@ -20,6 +19,12 @@ function safeReturnTo(value: string) {
   return value === "/berichte" || value.startsWith("/berichte?")
     ? value
     : "/berichte";
+}
+
+function formValues(formData: FormData, key: string) {
+  return formData.getAll(key).map((value) =>
+    typeof value === "string" ? value : "",
+  );
 }
 
 function resultPath(
@@ -87,8 +92,15 @@ export async function updateReportTimeEntryAction(
   const employee = await requireEmployeeSession();
   const entryId = formValue(formData, "entryId");
   const description = formValue(formData, "description").trim();
-  const startTime = formValue(formData, "startTime");
-  const endTime = formValue(formData, "endTime");
+  const segmentStartTimes = formValues(formData, "segmentStartTime");
+  const segmentEndTimes = formValues(formData, "segmentEndTime");
+  const segmentCount = Math.max(segmentStartTimes.length, segmentEndTimes.length);
+  const parsedSegments = validateTimeEntrySegments(
+    Array.from({ length: segmentCount }, (_, index) => ({
+      startTime: segmentStartTimes[index] ?? "",
+      endTime: segmentEndTimes[index] ?? "",
+    })),
+  );
   const returnTo = safeReturnTo(formValue(formData, "returnTo"));
   const fieldErrors: ReportTimeEntryEditState["fieldErrors"] = {};
 
@@ -96,6 +108,7 @@ export async function updateReportTimeEntryAction(
     return {
       formError: "Der Eintrag wurde nicht gefunden.",
       fieldErrors: {},
+      segmentErrors: {},
     };
   }
 
@@ -103,29 +116,14 @@ export async function updateReportTimeEntryAction(
     fieldErrors.description = "Bitte gib eine Beschreibung ein.";
   }
 
-  if (!startTime) {
-    fieldErrors.startTime = "Bitte gib eine Startzeit ein.";
-  }
-
-  if (!endTime) {
-    fieldErrors.endTime = "Bitte gib eine Endzeit ein.";
-  }
-
-  const calculated = calculateTimeEntryFromStartEnd({ startTime, endTime });
-
-  if (!calculated.ok && startTime && endTime) {
-    const message =
-      calculated.errors[0] === "end-not-after-start"
-        ? "Die Endzeit muss nach der Startzeit liegen."
-        : "Bitte prüfe Start- und Endzeit.";
-    fieldErrors.startTime = message;
-    fieldErrors.endTime = message;
-  }
-
-  if (Object.keys(fieldErrors).length > 0 || !calculated.ok) {
+  if (Object.keys(fieldErrors).length > 0 || !parsedSegments.ok) {
     return {
-      formError: "Bitte prüfe die markierten Felder.",
+      formError:
+        !parsedSegments.ok && parsedSegments.reason === "overlapping-segments"
+          ? "Zeiträume innerhalb eines Eintrags dürfen sich nicht überschneiden."
+          : "Bitte prüfe die markierten Felder und Zeiträume.",
       fieldErrors,
+      segmentErrors: parsedSegments.ok ? {} : parsedSegments.segmentErrors,
     };
   }
 
@@ -140,6 +138,7 @@ export async function updateReportTimeEntryAction(
     return {
       formError: "Der Eintrag wurde nicht gefunden.",
       fieldErrors: {},
+      segmentErrors: {},
     };
   }
 
@@ -149,47 +148,27 @@ export async function updateReportTimeEntryAction(
     return {
       formError: "Du darfst diesen Eintrag nicht bearbeiten.",
       fieldErrors: {},
+      segmentErrors: {},
     };
   }
 
-  let updateQuery = supabase
-    .from("time_entries")
-    .update({
-      description,
-      start_time: calculated.value.startTime,
-      end_time: calculated.value.endTime,
-      duration_minutes: calculated.value.durationMinutes,
-      updated_by_employee_id: employee.id,
-    })
-    .eq("id", entryId);
-
-  if (employee.role !== "admin") {
-    updateQuery = updateQuery.eq("employee_id", employee.id);
-  }
-
-  const { error: updateError } = await updateQuery;
+  const { error: updateError } = await supabase.rpc("save_time_entry_with_segments", {
+    p_entry_id: entryId,
+    p_task_id: existing.task_id,
+    p_description: description,
+    p_work_date: existing.work_date,
+    p_billable: existing.billable,
+    p_segments: parsedSegments.value.segments.map((segment) => ({
+      start_time: segment.startTime,
+      end_time: segment.endTime,
+    })),
+  });
 
   if (updateError) {
     return {
       formError: "Der Eintrag konnte nicht gespeichert werden.",
       fieldErrors: {},
-    };
-  }
-
-  const { error: segmentError } = await replaceTimeEntrySegments({
-    entryId,
-    segment: {
-      workDate: existing.work_date,
-      startTime: calculated.value.startTime,
-      endTime: calculated.value.endTime,
-      durationMinutes: calculated.value.durationMinutes,
-    },
-  });
-
-  if (segmentError) {
-    return {
-      formError: "Die Arbeitszeit-Segmente konnten nicht gespeichert werden.",
-      fieldErrors: {},
+      segmentErrors: {},
     };
   }
 

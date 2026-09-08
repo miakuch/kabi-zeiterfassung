@@ -109,6 +109,10 @@
   Tagesdauer, neueste Tage zuerst, innerhalb des Tages spaeteste Startzeit
   zuerst, 50/100 Pagination und Aktionen fuer Bearbeiten, Loeschen,
   Duplizieren, Fortsetzen und Abrechenbar-Umschaltung.
+- Fortgesetzte Timer werden am selben Tag als getrennte Zeitsegmente gespeichert.
+  Der Bearbeitungs- und Duplizierdialog zeigt diese Segmente einzeln, berechnet
+  die tatsaechliche Arbeitszeit als Summe und speichert Eintrag und Segmente
+  atomar. Fortsetzungen an einem anderen Tag erzeugen einen neuen Eintrag.
 - Sprint 7 ist begonnen: Die globalen Berichtsfilter sind umgesetzt mit
   Quickfiltern, Kalenderdaten, Kunde, Projekt, Aufgabe, Abrechenbar und
   Admin-Mitarbeitendenfilter.

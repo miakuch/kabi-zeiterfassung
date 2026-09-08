@@ -595,7 +595,7 @@ Jeder Sprint muss am Ende lauffaehig, pruefbar und demo-faehig sein.
 - Exporthistorie
 - Audit-Log
 - Tags
-- Pausenlogik
+- eigenstaendige Pausenerfassung oder automatische Pausenabzuege
 - Kalenderansicht
 - Mitarbeitenden-Detailansicht fuer Aufgabenfreigaben
 - Dark Mode

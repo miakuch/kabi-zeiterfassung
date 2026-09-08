@@ -163,6 +163,34 @@ Regeln:
 - Admins bearbeiten/loeschen alle Eintraege
 - Keine Export- oder Monatssperren in V1
 
+Bei Eintraegen mit mehreren Zeitraeumen enthalten `start_time` und `end_time`
+die aeussere Zeitspanne. `duration_minutes` ist immer die Summe der zugeordneten
+Zeitsegmente und enthaelt keine Luecken zwischen ihnen.
+
+### time_entry_segments
+
+Einzelne Arbeitszeitraeume eines gespeicherten Zeiteintrags.
+
+Felder:
+
+- id
+- time_entry_id
+- work_date
+- start_time
+- end_time
+- duration_minutes
+- created_at
+- updated_at
+
+Regeln:
+
+- Jeder Zeiteintrag besitzt mindestens ein Segment
+- Alle Segmente eines Eintrags liegen am selben Kalendertag
+- Ein Segment hat mindestens eine Minute und geht nicht ueber Mitternacht
+- Segmente desselben Eintrags duerfen sich nicht ueberschneiden
+- Beim Bearbeiten werden Eltern-Eintrag und Segmente atomar gespeichert
+- Die Segmentdauer wird serverseitig aus Start und Ende berechnet
+
 ### timer_drafts
 
 Laufende oder gestoppte, noch nicht gespeicherte Timer.
@@ -176,6 +204,7 @@ Felder:
 - billable
 - started_at_utc
 - stopped_at_utc
+- resumed_time_entry_id
 - status: `running` oder `stopped`
 - created_at
 - updated_at
@@ -185,6 +214,8 @@ Regeln:
 - Maximal ein Timer-Entwurf pro Mitarbeitendem
 - Geraeteuebergreifend sichtbar
 - Neuer Timer erst nach Speichern oder Verwerfen des bestehenden Entwurfs
+- `resumed_time_entry_id` verbindet einen fortgesetzten Timer mit dem bestehenden
+  Eintrag, solange die Fortsetzung am selben Kalendertag liegt
 
 ### user_preferences
 

@@ -1,6 +1,6 @@
 # Konfigurationsstatus
 
-Stand: 2026-06-14
+Stand: 2026-09-08
 
 Diese Datei fasst die technischen Entscheidungen und erledigten
 Konfigurationspunkte aus dem Nachlauf des Interviews zusammen. Sie ist kein
@@ -36,14 +36,31 @@ Konsequenz fuer Migrationen:
 
 KABI DEV:
 
-- Die lokalen Migrationen wurden am 2026-06-14 per Supabase CLI auf KABI DEV
-  angewendet.
+- Die lokalen Migrationen wurden per Supabase CLI auf KABI DEV angewendet und
+  zuletzt am 2026-09-08 mit der Remote-Migrationshistorie abgeglichen.
 - Ausgefuehrte Migrationen:
   - `20260611231000_initial_schema.sql`
   - `20260611232000_rls_policies.sql`
+  - `20260614145000_timer_resume_entries.sql`
+  - `20260614161000_time_entry_segments.sql`
+  - `20260701193000_performance_indexes.sql`
+  - `20260908120000_save_time_entry_segments.sql`
+- KABI DEV meldete nach der Migration am 2026-09-08 den Status
+  `ACTIVE_HEALTHY`.
 - `public.employees` und die weiteren V1-Kerntabellen existieren in KABI DEV.
 - Direkt nach der Migration war `public.employees` leer; der erste erfolgreiche
   Login mit `INITIAL_ADMIN_EMAIL` soll den Initial-Admin automatisch anlegen.
+
+KABI PROD:
+
+- Die Remote-Migrationshistorie wurde am 2026-09-08 mit dem lokalen Stand
+  abgeglichen.
+- Die zuvor ausstehenden Performance-Indizes und die atomare Speicherfunktion
+  fuer segmentierte Zeiteintraege wurden angewendet:
+  - `20260701193000_performance_indexes.sql`
+  - `20260908120000_save_time_entry_segments.sql`
+- Diese beiden Migrationen schreiben bestehende Zeiteintraege nicht um und
+  loeschen keine vorhandenen Segmente.
 
 ## Lokale Umgebung
 

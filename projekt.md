@@ -115,6 +115,8 @@ Nach dem Hinzufuegen wird die Eingabezeile komplett geleert.
 - Der Entwurf kann laufend oder gestoppt/ungespeichert sein
 - Timer-Entwuerfe werden serverseitig gespeichert und sind geraeteuebergreifend sichtbar
 - Beschreibung, Aufgabe und Abrechenbarkeit bleiben waehrend eines laufenden Timers editierbar
+- Fortsetzen fuegt am selben Kalendertag einen neuen Zeitraum zum bestehenden
+  Eintrag hinzu; an einem anderen Kalendertag entsteht ein neuer Eintrag
 - Beim Stoppen ohne Beschreibung wird der Timer angehalten, aber noch nicht als Eintrag gespeichert
 - Ein gestoppter ungespeicherter Timer bleibt prominent sichtbar, bis er gespeichert oder verworfen wird
 - Solange ein ungespeicherter Timer-Entwurf existiert, kann kein neuer Timer gestartet werden
@@ -133,6 +135,9 @@ Timer werden nicht automatisch gestoppt. Die App warnt, wenn ein Timer ueber Mit
 - Warnung ab 10 Stunden
 - Ueberschneidungen werden gewarnt, aber nach Bestaetigung erlaubt
 - Ueberschneidungsbestaetigung wird nicht dauerhaft gespeichert
+- Ein Eintrag kann mehrere getrennte Zeitraeume desselben Tages enthalten
+- Die Eintragsdauer ist die Summe der Zeitraeume; Luecken werden nicht mitgezaehlt
+- Zeitraeume innerhalb desselben Eintrags duerfen sich nicht ueberschneiden
 
 ### Abrechenbarkeit
 
@@ -151,8 +156,10 @@ Das Euro-Icon ist immer sichtbar, farblich unterscheidbar und in Listen direkt k
 - Klick auf Zeile oeffnet Bearbeiten-Dialog
 - Schnellaktionen: bearbeiten, loeschen, duplizieren, fortsetzen, abrechenbar umschalten
 - Loeschen mit Sicherheitsabfrage
-- Duplizieren oeffnet vorausgefuellten Entwurf
+- Duplizieren oeffnet einen vorausgefuellten Entwurf und erhaelt vorhandene Zeitraeume
 - Fortsetzen startet sofort einen neuen Timer mit gleichem Kontext und gleicher Beschreibung
+- Bearbeiten zeigt alle Zeitraeume einzeln; sie koennen angepasst, hinzugefuegt
+  oder entfernt werden, wobei mindestens ein Zeitraum erhalten bleibt
 - Keine Zusammenfuehren-Funktion in V1
 
 Mobil zeigt der Zeiten-Screen eine kompakte Eingabe plus reduzierte Liste der letzten Eintraege. Desktop und Tablet werden priorisiert.
@@ -416,7 +423,7 @@ Nicht Teil von V1:
 - Exporthistorie
 - Audit-Log
 - Tags
-- Pausenlogik
+- eigenstaendige Pausenerfassung oder automatische Pausenabzuege
 - Kalenderansicht
 - Mitarbeitenden-Detailansicht fuer Aufgabenfreigaben
 - Dark Mode

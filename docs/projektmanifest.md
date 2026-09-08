@@ -1,6 +1,6 @@
 # KABI Zeiterfassung - Projektmanifest
 
-Stand: 2026-06-11
+Stand: 2026-09-08
 
 Dieses Manifest ist die verbindliche Leitplanke fuer die Entwicklung der KABI
 Zeiterfassung. Es fasst die im Konzeptionsgespraech geklaerten fachlichen und
@@ -96,7 +96,7 @@ Nicht Teil von V1:
 - Exporthistorie
 - Audit-Log
 - Tags
-- Pausenlogik
+- eigenstaendige Pausenerfassung oder automatische Pausenabzuege
 - Kalenderansicht
 - Mitarbeitenden-Detailansicht fuer Aufgabenfreigaben
 - Dark Mode
@@ -135,6 +135,15 @@ Verbindliche Regeln:
 - Sekunden werden beim Speichern auf die naechste volle Minute aufgerundet.
 - Mindestdauer ist 1 Minute.
 - Eintraege duerfen nicht ueber Mitternacht gehen.
+- Ein fortgesetzter Timer wird am selben Kalendertag als weiterer Zeitraum des
+  bestehenden Eintrags gespeichert. Beim Fortsetzen an einem anderen
+  Kalendertag entsteht ein neuer Eintrag.
+- Ein Eintrag kann mehrere getrennte Zeitraeume desselben Kalendertags enthalten.
+  Seine Dauer ist die Summe dieser Zeitraeume; Luecken dazwischen werden nicht
+  als Arbeitszeit gezaehlt.
+- Im Bearbeitungs- und Duplizierdialog bleiben Zeitraeume getrennt sichtbar und
+  koennen einzeln angepasst, hinzugefuegt oder entfernt werden.
+- Zeitraeume desselben Eintrags duerfen sich nicht ueberschneiden.
 - Ueberschneidungen werden gewarnt, nach Bestaetigung aber erlaubt.
 - Keine automatische Rundung auf 5 oder 15 Minuten.
 

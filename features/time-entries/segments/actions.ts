@@ -24,23 +24,3 @@ export async function addTimeEntrySegment({
     duration_minutes: segment.durationMinutes,
   });
 }
-
-export async function replaceTimeEntrySegments({
-  entryId,
-  segment,
-}: {
-  entryId: string;
-  segment: TimeEntrySegmentInput;
-}) {
-  const supabase = await createSupabaseServerClient();
-  const { error: deleteError } = await supabase
-    .from("time_entry_segments")
-    .delete()
-    .eq("time_entry_id", entryId);
-
-  if (deleteError) {
-    return { error: deleteError };
-  }
-
-  return addTimeEntrySegment({ entryId, segment });
-}

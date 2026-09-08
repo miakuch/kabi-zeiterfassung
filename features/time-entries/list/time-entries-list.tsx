@@ -9,12 +9,14 @@ import {
   Euro,
   Pencil,
   Play,
+  Plus,
   Save,
   Trash2,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { calculateTimeEntryFromStartEnd } from "@/features/time/domain/time-calculation";
 import type { TaskPickerItem } from "@/features/tasks/task-picker/queries";
 import {
   continueTimeEntryAction,
@@ -46,6 +48,11 @@ type EditorMode = "edit" | "duplicate";
 type EditorState = {
   mode: EditorMode;
   entry: TimeEntryListItem;
+  segments: Array<{
+    key: string;
+    startTime: string;
+    endTime: string;
+  }>;
 } | null;
 
 const fieldLabels = {
@@ -67,6 +74,48 @@ function entryContext(entry: TimeEntryListItem) {
     : entry.projectName;
 
   return `${project}: ${entry.taskName} - ${entry.customerName}`;
+}
+
+function editorState(mode: EditorMode, entry: TimeEntryListItem): EditorState {
+  return {
+    mode,
+    entry,
+    segments: entry.segments.map((segment) => ({
+      key: segment.id,
+      startTime: trimSeconds(segment.startTime),
+      endTime: trimSeconds(segment.endTime),
+    })),
+  };
+}
+
+function segmentDuration(startTime: string, endTime: string) {
+  const calculated = calculateTimeEntryFromStartEnd({ startTime, endTime });
+
+  return calculated.ok ? calculated.value.durationMinutes : null;
+}
+
+function segmentErrorMessage(error?: string) {
+  if (error === "overlap") {
+    return "Dieser Zeitraum überschneidet sich mit einem anderen Zeitraum.";
+  }
+
+  if (error === "crosses-midnight") {
+    return "Der Zeitraum darf nicht über Mitternacht gehen.";
+  }
+
+  if (error === "end-not-after-start") {
+    return "Ende muss nach Start liegen.";
+  }
+
+  if (error === "invalid-time") {
+    return "Bitte eine gültige Uhrzeit eingeben.";
+  }
+
+  if (error === "required") {
+    return "Start und Ende sind erforderlich.";
+  }
+
+  return null;
 }
 
 function fieldErrorMessage(field: keyof typeof fieldLabels, error?: string) {
@@ -356,6 +405,7 @@ export function TimeEntriesList({ result, tasks }: TimeEntriesListProps) {
   );
   const safeEditState = editState ?? initialTimeEntryEditActionState;
   const editFieldErrors = safeEditState.fieldErrors ?? {};
+  const editSegmentErrors = safeEditState.segmentErrors ?? {};
   const tasksById = useMemo(
     () => new Map(tasks.map((task) => [task.id, task])),
     [tasks],
@@ -382,6 +432,62 @@ export function TimeEntriesList({ result, tasks }: TimeEntriesListProps) {
     return editFieldErrors[field]
       ? "border-destructive focus:border-destructive focus:ring-destructive/20"
       : "";
+  }
+
+  function segmentErrorClass(index: number, field: "startTime" | "endTime") {
+    return editSegmentErrors[index]?.[field]
+      ? "border-destructive focus:border-destructive focus:ring-destructive/20"
+      : "";
+  }
+
+  function updateEditorSegment(
+    index: number,
+    field: "startTime" | "endTime",
+    value: string,
+  ) {
+    setEditor((current) => {
+      if (!current) {
+        return current;
+      }
+
+      return {
+        ...current,
+        segments: current.segments.map((segment, segmentIndex) =>
+          segmentIndex === index ? { ...segment, [field]: value } : segment,
+        ),
+      };
+    });
+  }
+
+  function addEditorSegment() {
+    setEditor((current) =>
+      current
+        ? {
+            ...current,
+            segments: [
+              ...current.segments,
+              {
+                key: globalThis.crypto.randomUUID(),
+                startTime: "",
+                endTime: "",
+              },
+            ],
+          }
+        : current,
+    );
+  }
+
+  function removeEditorSegment(index: number) {
+    setEditor((current) => {
+      if (!current || current.segments.length <= 1) {
+        return current;
+      }
+
+      return {
+        ...current,
+        segments: current.segments.filter((_, segmentIndex) => segmentIndex !== index),
+      };
+    });
   }
 
   function toggleExpandedEntry(entryId: string) {
@@ -443,8 +549,8 @@ export function TimeEntriesList({ result, tasks }: TimeEntriesListProps) {
               expandedEntryIds={expandedEntryIds}
               key={week.weekKey}
               onDelete={setDeleteCandidate}
-              onDuplicate={(entry) => setEditor({ mode: "duplicate", entry })}
-              onEdit={(entry) => setEditor({ mode: "edit", entry })}
+              onDuplicate={(entry) => setEditor(editorState("duplicate", entry))}
+              onEdit={(entry) => setEditor(editorState("edit", entry))}
               onToggleExpanded={toggleExpandedEntry}
               week={week}
             />
@@ -546,7 +652,7 @@ export function TimeEntriesList({ result, tasks }: TimeEntriesListProps) {
                 </label>
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-4">
+              <div className="grid gap-3 sm:grid-cols-2">
                 <label className="grid gap-1 text-sm font-medium">
                   Datum
                   <input
@@ -557,32 +663,6 @@ export function TimeEntriesList({ result, tasks }: TimeEntriesListProps) {
                     defaultValue={editor.entry.workDate}
                     name="workDate"
                     type="date"
-                  />
-                </label>
-
-                <label className="grid gap-1 text-sm font-medium">
-                  Start
-                  <input
-                    className={cn(
-                      "min-h-11 rounded-md border bg-background px-3 text-base outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/25",
-                      errorClass("startTime"),
-                    )}
-                    defaultValue={trimSeconds(editor.entry.startTime)}
-                    name="startTime"
-                    type="time"
-                  />
-                </label>
-
-                <label className="grid gap-1 text-sm font-medium">
-                  Ende
-                  <input
-                    className={cn(
-                      "min-h-11 rounded-md border bg-background px-3 text-base outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/25",
-                      errorClass("endTime"),
-                    )}
-                    defaultValue={trimSeconds(editor.entry.endTime)}
-                    name="endTime"
-                    type="time"
                   />
                 </label>
 
@@ -598,6 +678,105 @@ export function TimeEntriesList({ result, tasks }: TimeEntriesListProps) {
                   </select>
                 </label>
               </div>
+
+              <fieldset className="grid gap-3 rounded-md border bg-background/50 p-3 sm:p-4">
+                <legend className="px-1 text-sm font-semibold">Zeiträume</legend>
+                <p className="text-xs text-muted-foreground">
+                  Das Datum gilt für alle Zeiträume. Pausen zwischen den Zeiträumen
+                  werden nicht als Arbeitszeit gezählt.
+                </p>
+
+                <div className="grid gap-3">
+                  {editor.segments.map((segment, index) => {
+                    const duration = segmentDuration(segment.startTime, segment.endTime);
+                    const startError = editSegmentErrors[index]?.startTime;
+                    const endError = editSegmentErrors[index]?.endTime;
+                    const errorMessage = segmentErrorMessage(startError ?? endError);
+
+                    return (
+                      <div className="grid gap-1" key={segment.key}>
+                        <div className="grid items-end gap-2 sm:grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)_auto_auto]">
+                          <span className="pb-3 text-xs font-semibold text-muted-foreground">
+                            {index + 1}
+                          </span>
+                          <label className="grid gap-1 text-sm font-medium">
+                            Start
+                            <input
+                              className={cn(
+                                "min-h-11 rounded-md border bg-background px-3 text-base outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/25",
+                                segmentErrorClass(index, "startTime"),
+                              )}
+                              name="segmentStartTime"
+                              onChange={(event) =>
+                                updateEditorSegment(index, "startTime", event.target.value)
+                              }
+                              type="time"
+                              value={segment.startTime}
+                            />
+                          </label>
+                          <label className="grid gap-1 text-sm font-medium">
+                            Ende
+                            <input
+                              className={cn(
+                                "min-h-11 rounded-md border bg-background px-3 text-base outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/25",
+                                segmentErrorClass(index, "endTime"),
+                              )}
+                              name="segmentEndTime"
+                              onChange={(event) =>
+                                updateEditorSegment(index, "endTime", event.target.value)
+                              }
+                              type="time"
+                              value={segment.endTime}
+                            />
+                          </label>
+                          <output className="min-w-[68px] pb-3 text-right font-mono text-sm font-semibold">
+                            {duration === null ? "--:--" : formatDuration(duration)}
+                          </output>
+                          <Button
+                            aria-label={`Zeitraum ${index + 1} löschen`}
+                            className="size-11 px-0"
+                            disabled={editor.segments.length <= 1}
+                            onClick={() => removeEditorSegment(index)}
+                            title="Zeitraum löschen"
+                            type="button"
+                            variant="ghost"
+                          >
+                            <Trash2 className="size-4" aria-hidden="true" />
+                          </Button>
+                        </div>
+                        {errorMessage ? (
+                          <p className="text-xs text-destructive sm:pl-6">{errorMessage}</p>
+                        ) : null}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="flex flex-col gap-3 border-t pt-3 sm:flex-row sm:items-center sm:justify-between">
+                  <Button onClick={addEditorSegment} type="button" variant="outline">
+                    <Plus className="size-4" aria-hidden="true" />
+                    Zeitraum hinzufügen
+                  </Button>
+                  <p className="flex items-baseline justify-between gap-3 text-sm sm:justify-end">
+                    <span className="text-muted-foreground">Tatsächliche Arbeitszeit</span>
+                    <strong className="font-mono text-base">
+                      {editor.segments.every(
+                        (segment) =>
+                          segmentDuration(segment.startTime, segment.endTime) !== null,
+                      )
+                        ? formatDuration(
+                            editor.segments.reduce(
+                              (total, segment) =>
+                                total +
+                                (segmentDuration(segment.startTime, segment.endTime) ?? 0),
+                              0,
+                            ),
+                          )
+                        : "--:--"}
+                    </strong>
+                  </p>
+                </div>
+              </fieldset>
 
               {safeEditState.formError ? (
                 <div className="grid gap-1 rounded-md border border-destructive/30 bg-background px-3 py-2 text-sm text-destructive">

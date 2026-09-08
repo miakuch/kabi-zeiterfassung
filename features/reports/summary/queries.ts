@@ -68,6 +68,12 @@ type TimeEntryRow = {
   billable: boolean;
   tasks: RelatedTask | RelatedTask[] | null;
   employees: RelatedEmployee | RelatedEmployee[] | null;
+  time_entry_segments: Array<{
+    id: string;
+    start_time: string;
+    end_time: string;
+    duration_minutes: number;
+  }> | null;
 };
 
 type ProjectRateRow = {
@@ -261,6 +267,14 @@ function toReportEntry(row: TimeEntryRow): ReportEntry | null {
   const project = firstRelated(task?.projects ?? null);
   const customer = firstRelated(project?.customers ?? null);
   const employee = firstRelated(row.employees);
+  const segments = (row.time_entry_segments ?? [])
+    .map((segment) => ({
+      id: segment.id,
+      startTime: segment.start_time,
+      endTime: segment.end_time,
+      durationMinutes: segment.duration_minutes,
+    }))
+    .sort((a, b) => a.startTime.localeCompare(b.startTime));
 
   if (!task || !project || !customer || !employee) {
     return null;
@@ -285,6 +299,17 @@ function toReportEntry(row: TimeEntryRow): ReportEntry | null {
     durationMinutes: row.duration_minutes,
     billable: row.billable,
     billableAmount: null,
+    segments:
+      segments.length > 0
+        ? segments
+        : [
+            {
+              id: row.id,
+              startTime: row.start_time,
+              endTime: row.end_time,
+              durationMinutes: row.duration_minutes,
+            },
+          ],
   };
 }
 
@@ -347,7 +372,7 @@ export async function getReportOverview({
   let query = supabase
     .from("time_entries")
     .select(
-      "id, employee_id, task_id, description, work_date, start_time, end_time, duration_minutes, billable, tasks(id, name, project_id, projects(id, name, code, color, customers(id, name))), employees!time_entries_employee_id_fkey(id, name)",
+      "id, employee_id, task_id, description, work_date, start_time, end_time, duration_minutes, billable, tasks(id, name, project_id, projects(id, name, code, color, customers(id, name))), employees!time_entries_employee_id_fkey(id, name), time_entry_segments(id, start_time, end_time, duration_minutes)",
     )
     .gte("work_date", filters.startDate)
     .lte("work_date", filters.endDate)

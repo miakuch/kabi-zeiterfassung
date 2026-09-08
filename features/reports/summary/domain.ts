@@ -28,6 +28,12 @@ export type ReportEntry = {
   durationMinutes: number;
   billable: boolean;
   billableAmount: number | null;
+  segments?: Array<{
+    id: string;
+    startTime: string;
+    endTime: string;
+    durationMinutes: number;
+  }>;
 };
 
 export type ReportSummary = {

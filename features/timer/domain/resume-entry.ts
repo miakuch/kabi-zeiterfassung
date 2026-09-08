@@ -37,11 +37,7 @@ export function mergeResumedTimeEntry({
   segment: ResumeSegment;
 }): ResumableTimeEntry {
   if (existingEntry.workDate !== segment.workDate) {
-    return {
-      ...existingEntry,
-      durationMinutes:
-        existingEntry.durationMinutes + segment.durationMinutes,
-    };
+    throw new Error("Fortgesetzte Zeiträume müssen am selben Arbeitstag liegen.");
   }
 
   return {

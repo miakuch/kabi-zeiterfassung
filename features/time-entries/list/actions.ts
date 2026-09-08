@@ -6,13 +6,10 @@ import { requireEmployeeSession } from "@/lib/auth/require-session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { canBookTaskForEmployee } from "@/features/tasks/task-picker/bookable-task";
 import {
-  addTimeEntrySegment,
-  replaceTimeEntrySegments,
-} from "@/features/time-entries/segments/actions";
-import {
   formValue,
   validateManualTimeEntry,
 } from "@/features/time-entry-bar/schema";
+import { validateTimeEntrySegments } from "@/features/time-entries/segments/domain";
 import type { TimeEntryEditActionState } from "./action-state";
 import { parseTimeEntriesPageSize, type TimeEntriesPageSize } from "./queries";
 
@@ -32,6 +29,12 @@ function errorPath(error: string) {
 
 function parseBillable(formData: FormData) {
   return formData.get("billable") === "1";
+}
+
+function formValues(formData: FormData, key: string) {
+  return formData.getAll(key).map((value) =>
+    typeof value === "string" ? value : "",
+  );
 }
 
 async function getOwnTimeEntry(entryId: string, employeeId: string) {
@@ -68,131 +71,84 @@ export async function upsertTimeEntryFromListAction(
   const employee = await requireEmployeeSession();
   const intent = formValue(formData, "intent") === "duplicate" ? "duplicate" : "edit";
   const entryId = formValue(formData, "entryId");
-  const parsed = validateManualTimeEntry({
+  const segmentStartTimes = formValues(formData, "segmentStartTime");
+  const segmentEndTimes = formValues(formData, "segmentEndTime");
+  const segmentCount = Math.max(segmentStartTimes.length, segmentEndTimes.length);
+  const parsedSegments = validateTimeEntrySegments(
+    Array.from({ length: segmentCount }, (_, index) => ({
+      startTime: segmentStartTimes[index] ?? "",
+      endTime: segmentEndTimes[index] ?? "",
+    })),
+  );
+  const parsedCommon = validateManualTimeEntry({
     taskId: formValue(formData, "taskId"),
     description: formValue(formData, "description"),
     workDate: formValue(formData, "workDate"),
-    startTime: formValue(formData, "startTime"),
-    endTime: formValue(formData, "endTime"),
+    startTime: "00:00",
+    endTime: "00:01",
     durationMinutes: "",
     billable: parseBillable(formData),
     manualMode: "end",
   });
 
-  if (!parsed.ok) {
+  if (!parsedCommon.ok || !parsedSegments.ok) {
+    const segmentFormError = !parsedSegments.ok
+      ? parsedSegments.reason === "no-segments"
+        ? "Mindestens ein Zeitraum ist erforderlich."
+        : parsedSegments.reason === "overlapping-segments"
+          ? "Zeiträume innerhalb eines Eintrags dürfen sich nicht überschneiden."
+          : "Bitte prüfe die markierten Zeiträume."
+      : null;
+
     return {
-      formError: "Bitte prüfe die markierten Felder.",
-      fieldErrors: parsed.fieldErrors,
+      formError: segmentFormError ?? "Bitte prüfe die markierten Felder.",
+      fieldErrors: parsedCommon.ok ? {} : parsedCommon.fieldErrors,
+      segmentErrors: parsedSegments.ok ? {} : parsedSegments.segmentErrors,
     };
   }
 
   const canBookTask = await canBookTaskForEmployee({
     employeeId: employee.id,
-    taskId: parsed.value.taskId,
+    taskId: parsedCommon.value.taskId,
   });
 
   if (!canBookTask) {
     return {
       formError: "Diese Aufgabe ist nicht mehr aktiv oder nicht freigegeben.",
       fieldErrors: { taskId: "not-bookable" },
+      segmentErrors: {},
+    };
+  }
+
+  if (intent === "edit" && !entryId) {
+    return {
+      formError: "Eintrag wurde nicht gefunden.",
+      fieldErrors: {},
+      segmentErrors: {},
     };
   }
 
   const supabase = await createSupabaseServerClient();
-
-  if (intent === "duplicate") {
-    const { data, error } = await supabase
-      .from("time_entries")
-      .insert({
-        employee_id: employee.id,
-        task_id: parsed.value.taskId,
-        description: parsed.value.description,
-        work_date: parsed.value.workDate,
-        start_time: parsed.value.startTime,
-        end_time: parsed.value.endTime,
-        duration_minutes: parsed.value.durationMinutes,
-        billable: parsed.value.billable,
-        created_by_employee_id: employee.id,
-        updated_by_employee_id: employee.id,
-      })
-      .select("id")
-      .single();
-
-    if (error || !data) {
-      return {
-        formError: "Eintrag konnte nicht dupliziert werden.",
-        fieldErrors: {},
-      };
-    }
-
-    const { error: segmentError } = await addTimeEntrySegment({
-      entryId: data.id as string,
-      segment: {
-        workDate: parsed.value.workDate,
-        startTime: parsed.value.startTime,
-        endTime: parsed.value.endTime,
-        durationMinutes: parsed.value.durationMinutes,
-      },
-    });
-
-    if (segmentError) {
-      return {
-        formError: "Eintrag konnte nicht vollständig dupliziert werden.",
-        fieldErrors: {},
-      };
-    }
-
-    revalidatePath("/zeiten");
-    return {
-      formError: null,
-      fieldErrors: {},
-      successMessage: "Eintrag wurde dupliziert.",
-    };
-  }
-
-  if (!entryId) {
-    return {
-      formError: "Eintrag wurde nicht gefunden.",
-      fieldErrors: {},
-    };
-  }
-
-  const { error } = await supabase
-    .from("time_entries")
-    .update({
-      task_id: parsed.value.taskId,
-      description: parsed.value.description,
-      work_date: parsed.value.workDate,
-      start_time: parsed.value.startTime,
-      end_time: parsed.value.endTime,
-      duration_minutes: parsed.value.durationMinutes,
-      billable: parsed.value.billable,
-      updated_by_employee_id: employee.id,
-    })
-    .eq("id", entryId)
-    .eq("employee_id", employee.id);
+  const { error } = await supabase.rpc("save_time_entry_with_segments", {
+    p_entry_id: intent === "duplicate" ? null : entryId,
+    p_task_id: parsedCommon.value.taskId,
+    p_description: parsedCommon.value.description,
+    p_work_date: parsedCommon.value.workDate,
+    p_billable: parsedCommon.value.billable,
+    p_segments: parsedSegments.value.segments.map((segment) => ({
+      start_time: segment.startTime,
+      end_time: segment.endTime,
+    })),
+  });
 
   if (error) {
     return {
-      formError: "Eintrag konnte nicht gespeichert werden.",
+      formError:
+        intent === "duplicate"
+          ? "Eintrag konnte nicht dupliziert werden."
+          : "Eintrag konnte nicht gespeichert werden.",
       fieldErrors: {},
-    };
-  }
-
-  const { error: segmentError } = await replaceTimeEntrySegments({
-    entryId,
-    segment: {
-      workDate: parsed.value.workDate,
-      startTime: parsed.value.startTime,
-      endTime: parsed.value.endTime,
-      durationMinutes: parsed.value.durationMinutes,
-    },
-  });
-
-  if (segmentError) {
-    return {
-      formError: "Eintragssegmente konnten nicht gespeichert werden.",
-      fieldErrors: {},
+      segmentErrors: {},
     };
   }
 
@@ -200,7 +156,9 @@ export async function upsertTimeEntryFromListAction(
   return {
     formError: null,
     fieldErrors: {},
-    successMessage: "Zeit wurde aktualisiert.",
+    segmentErrors: {},
+    successMessage:
+      intent === "duplicate" ? "Eintrag wurde dupliziert." : "Zeit wurde aktualisiert.",
   };
 }
 

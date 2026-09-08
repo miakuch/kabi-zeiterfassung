@@ -26,8 +26,8 @@ describe("mergeResumedTimeEntry", () => {
     });
   });
 
-  it("keeps the original displayed range when a resumed segment is on another date", () => {
-    expect(
+  it("rejects merging a resumed segment from another date", () => {
+    expect(() =>
       mergeResumedTimeEntry({
         existingEntry: {
           workDate: "2026-06-14",
@@ -42,11 +42,6 @@ describe("mergeResumedTimeEntry", () => {
           durationMinutes: 5,
         },
       }),
-    ).toEqual({
-      workDate: "2026-06-14",
-      startTime: "15:40:00",
-      endTime: "15:41:00",
-      durationMinutes: 6,
-    });
+    ).toThrow("Fortgesetzte Zeiträume müssen am selben Arbeitstag liegen.");
   });
 });

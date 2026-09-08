@@ -4098,3 +4098,25 @@ Wir bauen **KABI Zeiterfassung** als internes, deutschsprachiges Web-Tool für e
 Für die Umsetzung brauchen wir als Nächstes praktisch nur noch: Logo-Datei, SMTP-Zugang, Supabase Dev/Prod-Projekte, Vercel-Projekt und die Subdomain später als DNS-CNAME bei Hetzner.
 
 Referenzen: [Vercel Domains](https://vercel.com/docs/concepts/projects/domains/add-a-domain), [Supabase Environments](https://supabase.com/docs/guides/deployment/managing-environments/), [Supabase Auth SMTP](https://supabase.com/docs/guides/auth/auth-smtp), [shadcn Charts](https://ui.shadcn.com/charts).
+
+---
+
+# Ergaenzende Produktentscheidung vom 08.09.2026
+
+Die spaetere Praxiserprobung hat die urspruengliche Entscheidung zu
+`Fortsetzen` praezisiert:
+
+- Wird ein Eintrag am selben Kalendertag fortgesetzt, bleibt er ein fachlicher
+  Eintrag mit mehreren getrennten Zeitraeumen.
+- Pausen beziehungsweise Luecken zwischen den Zeitraeumen zaehlen nicht zur
+  Arbeitszeit; die Dauer ist die Summe der einzelnen Zeitraeume.
+- Der Bearbeitungs- und Duplizierdialog zeigt alle Zeitraeume getrennt und erlaubt
+  ihre einzelne Anpassung, das Hinzufuegen und das Entfernen.
+- Zeitraeume innerhalb desselben Eintrags duerfen sich nicht ueberschneiden und
+  mindestens ein Zeitraum muss bestehen bleiben.
+- Eine Fortsetzung an einem anderen Kalendertag erzeugt einen neuen Eintrag.
+- Dies ist keine eigenstaendige Pausenfunktion: Es gibt weiterhin keine
+  Pausentaste, keine Pausenpflicht und keinen automatischen Pausenabzug.
+
+Diese Entscheidung ersetzt fuer die beschriebene Fortsetzen-Funktion die
+fruehere Vorgabe, nach der jede Fortsetzung immer einen separaten Eintrag erzeugt.

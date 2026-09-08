@@ -121,13 +121,17 @@ Fachliche Zeitzone: `Europe/Berlin`.
 Gespeicherte Zeiteintraege:
 
 - lokales Datum
-- lokale Startzeit
-- lokale Endzeit
-- Dauer in Minuten
+- lokale Start- und Endzeit als aeussere Zeitspanne fuer Listen und Sortierung
+- ein oder mehrere Zeitsegmente mit lokaler Startzeit, Endzeit und Dauer
+- Dauer in Minuten als Summe der Segmente ohne Luecken zwischen ihnen
+- atomare Aktualisierung von Eltern-Eintrag und Segmenten ueber eine
+  transaktionale Postgres-Funktion
 
 Laufende Timer:
 
 - zusaetzlich UTC-Startzeitpunkt fuer genaue Laufzeitberechnung
+- Fortsetzen fuegt am selben lokalen Kalendertag ein Segment hinzu; bei einem
+  Datumswechsel wird ein neuer Zeiteintrag erzeugt
 
 ## Deployment
 

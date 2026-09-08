@@ -455,7 +455,11 @@ export async function saveStoppedTimerDraftAction(
     };
   }
 
-  if (draft.resumedTimeEntryId && resumedEntry) {
+  if (
+    draft.resumedTimeEntryId &&
+    resumedEntry &&
+    resumedEntry.workDate === parsed.value.workDate
+  ) {
     const mergedEntry = mergeResumedTimeEntry({
       existingEntry: resumedEntry,
       segment: {

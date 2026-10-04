@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
   useTransition,
+  type KeyboardEvent,
 } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
@@ -28,6 +29,7 @@ import {
   calculateTimeEntryFromStartAndDuration,
   calculateTimeEntryFromStartEnd,
 } from "@/features/time/domain/time-calculation";
+import { completeTimeWithZeroMinutes } from "@/features/time/domain/time-input";
 import {
   discardTimerDraftAction,
   saveStoppedTimerDraftAction,
@@ -267,6 +269,8 @@ export function TimeEntryBar({
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [durationMinutes, setDurationMinutes] = useState("");
+  const incompleteStartHourRef = useRef("");
+  const incompleteEndHourRef = useRef("");
   const workDateInputRef = useRef<HTMLInputElement>(null);
   const timerWorkDateInputRef = useRef<HTMLInputElement>(null);
   const [billable, setBillable] = useState(
@@ -449,6 +453,36 @@ export function TimeEntryBar({
 
   function onDurationBlur() {
     setDurationMinutes((current) => normalizeDurationInput(current));
+  }
+
+  function rememberIncompleteHour(
+    event: KeyboardEvent<HTMLInputElement>,
+    hourRef: { current: string },
+  ) {
+    if (event.currentTarget.value) {
+      hourRef.current = "";
+      return;
+    }
+
+    if (/^\d$/.test(event.key) && hourRef.current.length < 2) {
+      hourRef.current += event.key;
+    } else if (event.key === "Backspace" || event.key === "Delete") {
+      hourRef.current = "";
+    }
+  }
+
+  function completeStartTime() {
+    setStartTime((current) =>
+      completeTimeWithZeroMinutes(current, incompleteStartHourRef.current),
+    );
+    incompleteStartHourRef.current = "";
+  }
+
+  function completeEndTime() {
+    setEndTime((current) =>
+      completeTimeWithZeroMinutes(current, incompleteEndHourRef.current),
+    );
+    incompleteEndHourRef.current = "";
   }
 
   function onTaskChange(nextTaskId: string) {
@@ -768,7 +802,21 @@ export function TimeEntryBar({
                   errorClass("startTime"),
                 )}
                 name="startTime"
-                onChange={(event) => setStartTime(event.target.value)}
+                onBlur={completeStartTime}
+                onChange={(event) => {
+                  setStartTime(event.target.value);
+                  if (event.target.value) {
+                    incompleteStartHourRef.current = "";
+                  }
+                }}
+                onFocus={(event) => {
+                  if (!event.currentTarget.value) {
+                    incompleteStartHourRef.current = "";
+                  }
+                }}
+                onKeyDown={(event) =>
+                  rememberIncompleteHour(event, incompleteStartHourRef)
+                }
                 type="time"
                 value={startTime}
               />
@@ -804,7 +852,21 @@ export function TimeEntryBar({
                         errorClass("endTime"),
                       )}
                       name="endTime"
-                      onChange={(event) => setEndTime(event.target.value)}
+                      onBlur={completeEndTime}
+                      onChange={(event) => {
+                        setEndTime(event.target.value);
+                        if (event.target.value) {
+                          incompleteEndHourRef.current = "";
+                        }
+                      }}
+                      onFocus={(event) => {
+                        if (!event.currentTarget.value) {
+                          incompleteEndHourRef.current = "";
+                        }
+                      }}
+                      onKeyDown={(event) =>
+                        rememberIncompleteHour(event, incompleteEndHourRef)
+                      }
                       type="time"
                       value={endTime}
                     />

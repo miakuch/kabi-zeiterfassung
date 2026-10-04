@@ -86,7 +86,8 @@
 - Der letzte aktive Admin kann nicht deaktiviert oder zur Rolle Mitarbeitende
   geaendert werden.
 - Die Projektuebersicht ist umgesetzt: Kunde, Kennung/Name, Status,
-  Aufgabenanzahl, verbrauchte Stunden/Betrag, offene Budgets und Budgetstatus.
+  Aufgabenanzahl, abrechenbarer Budgetverbrauch in Stunden/Betrag, offene
+  Budgets, nachrangig ausgewiesene nicht abrechenbare Stunden und Budgetstatus.
 - Budgetdaten werden nur in der Admin-Route ueber eine Admin-Serverabfrage
   geladen und nicht an Mitarbeitenden-Routen weitergegeben.
 - Die Projekt-Detailseite ist umgesetzt: Projekte anlegen/bearbeiten,
@@ -125,9 +126,12 @@
   zuerst, sortierbaren Spalten, Admin-Mitarbeitendenspalte und bewusst
   aktivierbarer Admin-Betragsspalte.
 - Der Bearbeitungsdialog der Berichtstabelle erlaubt Korrekturen an Projekt,
-  Aufgabe, Datum, Beschreibung und Zeitraeumen. Admins koennen zusaetzlich die
-  mitarbeitende Person aendern; Mitarbeitende bleiben auf die eigene Person
-  begrenzt. Eintrag und Zeitsegmente werden dabei atomar gespeichert.
+  Aufgabe, Datum, Beschreibung, Abrechenbarkeit und Zeitraeumen. Admins koennen
+  zusaetzlich die mitarbeitende Person aendern; Mitarbeitende bleiben auf die
+  eigene Person begrenzt. Eintrag und Zeitsegmente werden dabei atomar
+  gespeichert.
+- Bei der manuellen Zeiterfassung werden reine Stundeneingaben beim Verlassen
+  des Start- oder Endzeitfelds automatisch um `:00` Minuten ergaenzt.
 - Sprint 8 ist begonnen: Die gemeinsame Export-Datenstruktur fuer den
   Projekt-Monatszeitnachweis ist umgesetzt. Sie bereitet genau ein Projekt und
   einen kompletten Kalendermonat vor, beruecksichtigt nur abrechenbare

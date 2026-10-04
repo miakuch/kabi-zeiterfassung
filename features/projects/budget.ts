@@ -6,6 +6,7 @@ export type ProjectBudgetInput = {
   budgetAlertBasis: BudgetAlertBasis;
   defaultHourlyRate: number | null;
   entries: Array<{
+    billable: boolean;
     durationMinutes: number;
     employeeId: string;
   }>;
@@ -25,6 +26,8 @@ export type ProjectBudgetSummary = {
   usedMinutes: number;
   usedHours: number;
   usedAmount: number;
+  nonBillableMinutes: number;
+  nonBillableHours: number;
   basis: BudgetAlertBasis;
   status: ProjectBudgetStatus;
   hoursUsagePercent: number | null;
@@ -115,17 +118,29 @@ export function calculateProjectBudgetSummary(
   const ratesByEmployee = new Map(
     input.memberRates.map((rate) => [rate.employeeId, rate.hourlyRate]),
   );
-  const usedMinutes = input.entries.reduce(
-    (sum, entry) => sum + entry.durationMinutes,
-    0,
-  );
-  const usedHours = usedMinutes / 60;
-  const usedAmount = input.entries.reduce((sum, entry) => {
-    const hourlyRate =
-      ratesByEmployee.get(entry.employeeId) ?? input.defaultHourlyRate ?? 0;
+  const totals = input.entries.reduce(
+    (current, entry) => {
+      if (!entry.billable) {
+        current.nonBillableMinutes += entry.durationMinutes;
+        return current;
+      }
 
-    return sum + (entry.durationMinutes / 60) * hourlyRate;
-  }, 0);
+      const hourlyRate =
+        ratesByEmployee.get(entry.employeeId) ?? input.defaultHourlyRate ?? 0;
+
+      current.usedMinutes += entry.durationMinutes;
+      current.usedAmount += (entry.durationMinutes / 60) * hourlyRate;
+      return current;
+    },
+    {
+      usedMinutes: 0,
+      usedAmount: 0,
+      nonBillableMinutes: 0,
+    },
+  );
+  const usedMinutes = totals.usedMinutes;
+  const usedHours = usedMinutes / 60;
+  const usedAmount = totals.usedAmount;
   const effectiveHourlyBudget = derivedHourlyBudget(input);
   const effectiveAmountBudget = derivedAmountBudget(input);
   const basis = inferBasis(input);
@@ -142,6 +157,8 @@ export function calculateProjectBudgetSummary(
     usedMinutes,
     usedHours: roundHours(usedHours),
     usedAmount: roundCurrency(usedAmount),
+    nonBillableMinutes: totals.nonBillableMinutes,
+    nonBillableHours: roundHours(totals.nonBillableMinutes / 60),
     basis,
     status: statusFromPercent(relevantPercent),
     hoursUsagePercent,

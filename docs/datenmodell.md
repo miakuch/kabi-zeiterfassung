@@ -72,6 +72,8 @@ Regeln:
 - Projektfarbe ist frei waehlbar
 - Budgethinweise nur fuer Admins
 - Budgetwarnlogik nutzt genau eine fuehrende Budgetart
+- Budgetverbrauch und Restbudget beruecksichtigen nur abrechenbare
+  Zeiteintraege; nicht abrechenbare Stunden werden separat ausgewiesen
 
 ### project_member_rates
 

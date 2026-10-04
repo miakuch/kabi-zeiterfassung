@@ -199,6 +199,11 @@ Budgethinweise sind nur fuer Admins relevant:
 - Warnung bei Budgetueberschreitung
 - keine Blockade
 
+Budgetverbrauch, offenes Budget, Prozentbalken und Budgethinweise werden nur
+aus abrechenbaren Zeiteintraegen berechnet. Nicht abrechenbare Stunden werden
+in der Projektuebersicht separat als nachrangige Information ausgewiesen und
+reduzieren das Projektbudget nicht.
+
 Ein Projekt kann beim Anlegen optional eine Standardaufgabe **Allgemein** erhalten. Die Checkbox ist standardmaessig aktiviert. Diese Aufgabe ist nicht automatisch fuer alle Mitarbeitenden freigegeben.
 
 ### Projektansichten

@@ -10,8 +10,8 @@ describe("project budget calculation", () => {
         budgetAlertBasis: "hours",
         defaultHourlyRate: 100,
         entries: [
-          { employeeId: "a", durationMinutes: 120 },
-          { employeeId: "b", durationMinutes: 180 },
+          { employeeId: "a", durationMinutes: 120, billable: true },
+          { employeeId: "b", durationMinutes: 180, billable: true },
         ],
         memberRates: [],
       }),
@@ -33,7 +33,7 @@ describe("project budget calculation", () => {
         amountBudget: 1200,
         budgetAlertBasis: "amount",
         defaultHourlyRate: 100,
-        entries: [{ employeeId: "a", durationMinutes: 180 }],
+        entries: [{ employeeId: "a", durationMinutes: 180, billable: true }],
         memberRates: [],
       }),
     ).toMatchObject({
@@ -51,7 +51,7 @@ describe("project budget calculation", () => {
         amountBudget: 5000,
         budgetAlertBasis: "hours",
         defaultHourlyRate: 100,
-        entries: [{ employeeId: "a", durationMinutes: 480 }],
+        entries: [{ employeeId: "a", durationMinutes: 480, billable: true }],
         memberRates: [],
       }).status,
     ).toBe("warning-80");
@@ -65,8 +65,8 @@ describe("project budget calculation", () => {
         budgetAlertBasis: "amount",
         defaultHourlyRate: 100,
         entries: [
-          { employeeId: "a", durationMinutes: 300 },
-          { employeeId: "b", durationMinutes: 300 },
+          { employeeId: "a", durationMinutes: 300, billable: true },
+          { employeeId: "b", durationMinutes: 300, billable: true },
         ],
         memberRates: [{ employeeId: "b", hourlyRate: 120 }],
       }),
@@ -86,9 +86,34 @@ describe("project budget calculation", () => {
         amountBudget: null,
         budgetAlertBasis: null,
         defaultHourlyRate: null,
-        entries: [{ employeeId: "a", durationMinutes: 60 }],
+        entries: [{ employeeId: "a", durationMinutes: 60, billable: true }],
         memberRates: [],
       }).status,
     ).toBe("no-budget");
+  });
+
+  it("tracks non-billable hours without consuming the project budget", () => {
+    expect(
+      calculateProjectBudgetSummary({
+        hourlyBudget: 10,
+        amountBudget: 1000,
+        budgetAlertBasis: "hours",
+        defaultHourlyRate: 100,
+        entries: [
+          { employeeId: "a", durationMinutes: 240, billable: true },
+          { employeeId: "a", durationMinutes: 120, billable: false },
+        ],
+        memberRates: [],
+      }),
+    ).toMatchObject({
+      usedMinutes: 240,
+      usedHours: 4,
+      usedAmount: 400,
+      nonBillableMinutes: 120,
+      nonBillableHours: 2,
+      hoursUsagePercent: 40,
+      remainingHours: 6,
+      remainingAmount: 600,
+    });
   });
 });

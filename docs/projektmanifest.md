@@ -165,6 +165,8 @@ Kunden sind in V1 bewusst einfach:
 Projekte gehoeren zu genau einem Kunden und koennen Budgets, Farbe,
 Projektkennung, Standardstundensatz und abweichende Mitarbeitenden-Stundensaetze
 haben. Budgethinweise sind nur fuer Admins sichtbar und blockieren nicht.
+Budgetverbrauch und Restbudget basieren ausschliesslich auf abrechenbaren
+Zeiteintraegen; nicht abrechenbare Stunden werden separat ausgewiesen.
 
 Aufgaben sind die buchbare Einheit. Neue Aufgaben sind standardmaessig
 abrechenbar. Mitarbeitende sehen nur aktive Aufgaben, die fuer alle freigegeben

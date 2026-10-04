@@ -191,10 +191,12 @@ function ProjectMetric({
   label,
   hours,
   amount,
+  note,
 }: {
   label: string;
   hours: string;
   amount: string;
+  note?: string;
 }) {
   return (
     <div className="grid gap-2">
@@ -215,6 +217,9 @@ function ProjectMetric({
             {amount}
           </p>
         </div>
+        {note ? (
+          <p className="text-xs text-muted-foreground">{note}</p>
+        ) : null}
       </div>
     </div>
   );
@@ -341,7 +346,7 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
             <span>Projekt</span>
             <span>Kunde</span>
             <span>Budget</span>
-            <span>Verbrauch</span>
+            <span>Budgetverbrauch</span>
             <span>Offen</span>
             <span className="text-right">Aktionen</span>
           </div>
@@ -418,9 +423,10 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
                 </div>
 
                 <ProjectMetric
-                  label="Verbrauch"
+                  label="Budgetverbrauch"
                   hours={formatHours(project.usedHours)}
                   amount={formatMoney(project.usedAmount)}
+                  note={`Nicht abrechenbar: ${formatHours(project.nonBillableHours)}`}
                 />
 
                 <ProjectMetric

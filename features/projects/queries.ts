@@ -22,6 +22,7 @@ export type ProjectOverviewItem = {
   defaultHourlyRate: number | null;
   usedHours: number;
   usedAmount: number;
+  nonBillableHours: number;
   remainingHours: number | null;
   remainingAmount: number | null;
   hoursUsagePercent: number | null;
@@ -109,6 +110,7 @@ type RelatedTask = {
 };
 
 type TimeEntryRow = {
+  billable: boolean;
   employee_id: string;
   duration_minutes: number;
   tasks:
@@ -337,7 +339,7 @@ export async function getProjectOverview(): Promise<ProjectOverviewItem[]> {
     admin.from("tasks").select("id, project_id, status"),
     admin
       .from("time_entries")
-      .select("employee_id, duration_minutes, tasks!inner(project_id)"),
+      .select("billable, employee_id, duration_minutes, tasks!inner(project_id)"),
     admin
       .from("project_member_rates")
       .select("project_id, employee_id, hourly_rate"),
@@ -356,7 +358,7 @@ export async function getProjectOverview(): Promise<ProjectOverviewItem[]> {
 
   const entriesByProject = new Map<
     string,
-    Array<{ durationMinutes: number; employeeId: string }>
+    Array<{ billable: boolean; durationMinutes: number; employeeId: string }>
   >();
   for (const entry of (entriesData ?? []) as unknown as TimeEntryRow[]) {
     const projectId = relatedProjectId(entry.tasks);
@@ -367,6 +369,7 @@ export async function getProjectOverview(): Promise<ProjectOverviewItem[]> {
 
     const entries = entriesByProject.get(projectId) ?? [];
     entries.push({
+      billable: entry.billable,
       durationMinutes: entry.duration_minutes,
       employeeId: entry.employee_id,
     });
@@ -414,6 +417,7 @@ export async function getProjectOverview(): Promise<ProjectOverviewItem[]> {
         defaultHourlyRate,
         usedHours: budgetSummary.usedHours,
         usedAmount: budgetSummary.usedAmount,
+        nonBillableHours: budgetSummary.nonBillableHours,
         remainingHours: budgetSummary.remainingHours,
         remainingAmount: budgetSummary.remainingAmount,
         hoursUsagePercent: budgetSummary.hoursUsagePercent,

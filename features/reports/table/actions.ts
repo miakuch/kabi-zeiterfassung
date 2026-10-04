@@ -11,7 +11,6 @@ import type { ReportTimeEntryEditState } from "./action-state";
 
 type ExistingTimeEntryRow = {
   employee_id: string;
-  billable: boolean;
 };
 
 const uuidSchema = z.string().uuid();
@@ -98,6 +97,7 @@ export async function updateReportTimeEntryAction(
   const taskId = formValue(formData, "taskId");
   const workDate = formValue(formData, "workDate");
   const description = formValue(formData, "description").trim();
+  const billable = formData.get("billable") === "1";
   const segmentStartTimes = formValues(formData, "segmentStartTime");
   const segmentEndTimes = formValues(formData, "segmentEndTime");
   const segmentCount = Math.max(segmentStartTimes.length, segmentEndTimes.length);
@@ -154,7 +154,7 @@ export async function updateReportTimeEntryAction(
   const supabase = await createSupabaseServerClient();
   const { data: existingData, error: existingError } = await supabase
     .from("time_entries")
-    .select("employee_id, billable")
+    .select("employee_id")
     .eq("id", entryId)
     .maybeSingle();
 
@@ -219,7 +219,7 @@ export async function updateReportTimeEntryAction(
     p_task_id: taskId,
     p_description: description,
     p_work_date: workDate,
-    p_billable: existing.billable,
+    p_billable: billable,
     p_segments: parsedSegments.value.segments.map((segment) => ({
       start_time: segment.startTime,
       end_time: segment.endTime,

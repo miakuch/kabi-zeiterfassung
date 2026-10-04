@@ -37,6 +37,7 @@ type ReportTableProps = {
 
 type ReportEditorState = {
   entry: ReportEntry;
+  billable: boolean;
   employeeId: string;
   projectId: string;
   taskId: string;
@@ -76,6 +77,7 @@ function reportEditorState(entry: ReportEntry): ReportEditorState {
 
   return {
     entry,
+    billable: entry.billable,
     employeeId: entry.employeeId,
     projectId: entry.projectId,
     taskId: entry.taskId,
@@ -561,6 +563,29 @@ export function ReportTable({
                   defaultValue={editor.entry.description}
                   name="description"
                 />
+              </label>
+
+              <label className="flex cursor-pointer items-start gap-3 rounded-md border bg-background px-3 py-3">
+                <input
+                  checked={editor.billable}
+                  className="mt-0.5 size-5 accent-primary"
+                  name="billable"
+                  onChange={(event) =>
+                    setEditor((current) =>
+                      current
+                        ? { ...current, billable: event.target.checked }
+                        : current,
+                    )
+                  }
+                  type="checkbox"
+                  value="1"
+                />
+                <span className="grid gap-0.5">
+                  <span className="text-sm font-medium">Abrechenbar</span>
+                  <span className="text-xs text-muted-foreground">
+                    Diesen Eintrag als abrechenbare Arbeitszeit berücksichtigen.
+                  </span>
+                </span>
               </label>
 
               <fieldset className="grid gap-3 rounded-md border bg-background/50 p-3 sm:p-4">

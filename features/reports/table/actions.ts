@@ -6,14 +6,16 @@ import { requireEmployeeSession } from "@/lib/auth/require-session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { validateTimeEntrySegments } from "@/features/time-entries/segments/domain";
 import { formValue } from "@/features/time-entry-bar/schema";
+import { z } from "zod";
 import type { ReportTimeEntryEditState } from "./action-state";
 
 type ExistingTimeEntryRow = {
   employee_id: string;
-  task_id: string;
-  work_date: string;
   billable: boolean;
 };
+
+const uuidSchema = z.string().uuid();
+const dateSchema = z.string().date();
 
 function safeReturnTo(value: string) {
   return value === "/berichte" || value.startsWith("/berichte?")
@@ -91,6 +93,10 @@ export async function updateReportTimeEntryAction(
 ): Promise<ReportTimeEntryEditState> {
   const employee = await requireEmployeeSession();
   const entryId = formValue(formData, "entryId");
+  const employeeId = formValue(formData, "employeeId");
+  const projectId = formValue(formData, "projectId");
+  const taskId = formValue(formData, "taskId");
+  const workDate = formValue(formData, "workDate");
   const description = formValue(formData, "description").trim();
   const segmentStartTimes = formValues(formData, "segmentStartTime");
   const segmentEndTimes = formValues(formData, "segmentEndTime");
@@ -116,6 +122,24 @@ export async function updateReportTimeEntryAction(
     fieldErrors.description = "Bitte gib eine Beschreibung ein.";
   }
 
+  if (!uuidSchema.safeParse(projectId).success) {
+    fieldErrors.projectId = "Bitte wähle ein Projekt aus.";
+  }
+
+  if (!uuidSchema.safeParse(taskId).success) {
+    fieldErrors.taskId = "Bitte wähle eine Aufgabe aus.";
+  }
+
+  if (!dateSchema.safeParse(workDate).success) {
+    fieldErrors.workDate = "Bitte gib ein gültiges Datum ein.";
+  }
+
+  if (!uuidSchema.safeParse(employeeId).success) {
+    fieldErrors.employeeId = "Bitte wähle eine:n Mitarbeitende:n aus.";
+  } else if (employee.role !== "admin" && employeeId !== employee.id) {
+    fieldErrors.employeeId = "Du darfst den Mitarbeitenden nicht ändern.";
+  }
+
   if (Object.keys(fieldErrors).length > 0 || !parsedSegments.ok) {
     return {
       formError:
@@ -130,7 +154,7 @@ export async function updateReportTimeEntryAction(
   const supabase = await createSupabaseServerClient();
   const { data: existingData, error: existingError } = await supabase
     .from("time_entries")
-    .select("employee_id, task_id, work_date, billable")
+    .select("employee_id, billable")
     .eq("id", entryId)
     .maybeSingle();
 
@@ -152,11 +176,49 @@ export async function updateReportTimeEntryAction(
     };
   }
 
-  const { error: updateError } = await supabase.rpc("save_time_entry_with_segments", {
+  const [
+    { data: taskData, error: taskError },
+    { data: targetEmployee, error: employeeError },
+  ] = await Promise.all([
+    supabase
+      .from("tasks")
+      .select("id, project_id")
+      .eq("id", taskId)
+      .maybeSingle(),
+    supabase
+      .from("employees")
+      .select("id")
+      .eq("id", employeeId)
+      .maybeSingle(),
+  ]);
+
+  if (taskError || !taskData || taskData.project_id !== projectId) {
+    return {
+      formError: "Bitte prüfe Projekt und Aufgabe.",
+      fieldErrors: {
+        projectId: "Projekt und Aufgabe passen nicht zusammen.",
+        taskId: "Projekt und Aufgabe passen nicht zusammen.",
+      },
+      segmentErrors: {},
+    };
+  }
+
+  if (employeeError || !targetEmployee) {
+    return {
+      formError: "Die mitarbeitende Person wurde nicht gefunden.",
+      fieldErrors: {
+        employeeId: "Bitte wähle eine:n gültige:n Mitarbeitende:n aus.",
+      },
+      segmentErrors: {},
+    };
+  }
+
+  const { error: updateError } = await supabase.rpc("update_time_entry_with_segments", {
     p_entry_id: entryId,
-    p_task_id: existing.task_id,
+    p_employee_id: employeeId,
+    p_task_id: taskId,
     p_description: description,
-    p_work_date: existing.work_date,
+    p_work_date: workDate,
     p_billable: existing.billable,
     p_segments: parsedSegments.value.segments.map((segment) => ({
       start_time: segment.startTime,

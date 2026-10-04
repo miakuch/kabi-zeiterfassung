@@ -124,6 +124,10 @@
   gefilterten Eintraegen ohne Pagination, Standard-Sortierung neueste Eintraege
   zuerst, sortierbaren Spalten, Admin-Mitarbeitendenspalte und bewusst
   aktivierbarer Admin-Betragsspalte.
+- Der Bearbeitungsdialog der Berichtstabelle erlaubt Korrekturen an Projekt,
+  Aufgabe, Datum, Beschreibung und Zeitraeumen. Admins koennen zusaetzlich die
+  mitarbeitende Person aendern; Mitarbeitende bleiben auf die eigene Person
+  begrenzt. Eintrag und Zeitsegmente werden dabei atomar gespeichert.
 - Sprint 8 ist begonnen: Die gemeinsame Export-Datenstruktur fuer den
   Projekt-Monatszeitnachweis ist umgesetzt. Sie bereitet genau ein Projekt und
   einen kompletten Kalendermonat vor, beruecksichtigt nur abrechenbare

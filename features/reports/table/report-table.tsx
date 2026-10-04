@@ -15,6 +15,7 @@ import { ArrowDownUp, Pencil, Plus, Save, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { EmployeeRole } from "@/lib/auth/require-session";
 import { calculateTimeEntryFromStartEnd } from "@/features/time/domain/time-calculation";
+import type { ReportFilterOptions } from "../filters/queries";
 import type { ReportEntry } from "../summary/domain";
 import { initialReportTimeEntryEditState } from "./action-state";
 import {
@@ -30,11 +31,16 @@ import {
 
 type ReportTableProps = {
   entries: ReportEntry[];
+  options: ReportFilterOptions;
   role: EmployeeRole;
 };
 
 type ReportEditorState = {
   entry: ReportEntry;
+  employeeId: string;
+  projectId: string;
+  taskId: string;
+  workDate: string;
   segments: Array<{
     key: string;
     startTime: string;
@@ -70,6 +76,10 @@ function reportEditorState(entry: ReportEntry): ReportEditorState {
 
   return {
     entry,
+    employeeId: entry.employeeId,
+    projectId: entry.projectId,
+    taskId: entry.taskId,
+    workDate: entry.workDate,
     segments: segments.map((segment) => ({
       key: segment.id,
       startTime: trimReportTime(segment.startTime),
@@ -132,6 +142,7 @@ function DeleteSubmitButton() {
 
 export function ReportTable({
   entries,
+  options,
   role,
 }: ReportTableProps) {
   const pathname = usePathname();
@@ -210,6 +221,29 @@ export function ReportTable({
         segments: current.segments.filter((_, segmentIndex) => segmentIndex !== index),
       };
     });
+  }
+
+  function updateEditorField(
+    field: "employeeId" | "taskId" | "workDate",
+    value: string,
+  ) {
+    setEditor((current) => (current ? { ...current, [field]: value } : current));
+  }
+
+  function updateEditorProject(projectId: string) {
+    const matchingTasks = options.tasks.filter(
+      (task) => task.projectId === projectId,
+    );
+
+    setEditor((current) =>
+      current
+        ? {
+            ...current,
+            projectId,
+            taskId: matchingTasks.length === 1 ? matchingTasks[0]?.id ?? "" : "",
+          }
+        : current,
+    );
   }
 
   const columns = useMemo<Array<ColumnDef<ReportEntry>>>(
@@ -386,14 +420,20 @@ export function ReportTable({
       </div>
 
       {editor ? (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-foreground/20 p-4">
-          <div className="grid max-h-[calc(100vh-2rem)] w-full max-w-2xl gap-4 overflow-y-auto rounded-md border bg-card p-5 shadow-lg">
+        <div
+          aria-labelledby="edit-report-entry-title"
+          aria-modal="true"
+          className="fixed inset-0 z-50 grid place-items-center bg-foreground/20 p-4"
+          role="dialog"
+        >
+          <div className="grid max-h-[calc(100vh-2rem)] w-full max-w-3xl gap-4 overflow-y-auto rounded-md border bg-card p-5 shadow-lg">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h3 className="text-lg font-semibold">Zeiteintrag bearbeiten</h3>
+                <h3 className="text-lg font-semibold" id="edit-report-entry-title">
+                  Zeiteintrag bearbeiten
+                </h3>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  {formatReportDate(editor.entry.workDate)} ·{" "}
-                  {reportProjectContext(editor.entry)}
+                  Alle Angaben dieses Eintrags können hier korrigiert werden.
                 </p>
               </div>
               <Button
@@ -412,20 +452,103 @@ export function ReportTable({
               <input name="returnTo" type="hidden" value={returnTo} />
 
               <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-md border bg-background p-3">
-                  <p className="text-xs font-medium uppercase tracking-normal text-muted-foreground">
+                {role === "admin" ? (
+                  <label className="grid gap-1 text-sm font-medium">
                     Mitarbeitende
-                  </p>
-                  <p className="mt-1 font-medium">{editor.entry.employeeName}</p>
-                </div>
-                <div className="rounded-md border bg-background p-3">
-                  <p className="text-xs font-medium uppercase tracking-normal text-muted-foreground">
-                    Datum
-                  </p>
-                  <p className="mt-1 font-medium">
-                    {formatReportDate(editor.entry.workDate)}
-                  </p>
-                </div>
+                    <select
+                      className={[
+                        "min-h-11 rounded-md border bg-background px-3 text-base outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/25",
+                        inputClass("employeeId"),
+                      ].join(" ")}
+                      name="employeeId"
+                      onChange={(event) =>
+                        updateEditorField("employeeId", event.target.value)
+                      }
+                      value={editor.employeeId}
+                    >
+                      <option value="">Mitarbeitende auswählen</option>
+                      {options.employees.map((employee) => (
+                        <option key={employee.id} value={employee.id}>
+                          {employee.name}
+                          {employee.status === "inactive" ? " (inaktiv)" : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ) : (
+                  <div className="rounded-md border bg-background p-3">
+                    <input
+                      name="employeeId"
+                      type="hidden"
+                      value={editor.employeeId}
+                    />
+                    <p className="text-xs font-medium uppercase tracking-normal text-muted-foreground">
+                      Mitarbeitende
+                    </p>
+                    <p className="mt-1 font-medium">{editor.entry.employeeName}</p>
+                  </div>
+                )}
+
+                <label className="grid gap-1 text-sm font-medium">
+                  Datum
+                  <input
+                    className={[
+                      "min-h-11 rounded-md border bg-background px-3 text-base outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/25",
+                      inputClass("workDate"),
+                    ].join(" ")}
+                    name="workDate"
+                    onChange={(event) =>
+                      updateEditorField("workDate", event.target.value)
+                    }
+                    type="date"
+                    value={editor.workDate}
+                  />
+                </label>
+
+                <label className="grid gap-1 text-sm font-medium">
+                  Projekt
+                  <select
+                    className={[
+                      "min-h-11 rounded-md border bg-background px-3 text-base outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/25",
+                      inputClass("projectId"),
+                    ].join(" ")}
+                    name="projectId"
+                    onChange={(event) => updateEditorProject(event.target.value)}
+                    value={editor.projectId}
+                  >
+                    <option value="">Projekt auswählen</option>
+                    {options.projects.map((project) => (
+                      <option key={project.id} value={project.id}>
+                        {project.code ? `${project.code} - ${project.name}` : project.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="grid gap-1 text-sm font-medium">
+                  Aufgabe
+                  <select
+                    className={[
+                      "min-h-11 rounded-md border bg-background px-3 text-base outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/25",
+                      inputClass("taskId"),
+                    ].join(" ")}
+                    disabled={!editor.projectId}
+                    name="taskId"
+                    onChange={(event) =>
+                      updateEditorField("taskId", event.target.value)
+                    }
+                    value={editor.taskId}
+                  >
+                    <option value="">Aufgabe auswählen</option>
+                    {options.tasks
+                      .filter((task) => task.projectId === editor.projectId)
+                      .map((task) => (
+                        <option key={task.id} value={task.id}>
+                          {task.name}
+                        </option>
+                      ))}
+                  </select>
+                </label>
               </div>
 
               <label className="grid gap-1 text-sm font-medium">

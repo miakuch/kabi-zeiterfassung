@@ -282,6 +282,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
 
       <ReportTable
         entries={overview.entries}
+        options={options}
         role={employee.role}
       />
 

@@ -1,5 +1,7 @@
 import "server-only";
 
+import { projectStatusFromRow, type ProjectStatus } from "./status";
+
 import { unstable_cache, unstable_noStore as noStore } from "next/cache";
 import { CACHE_TAG_PROJECT_DETAIL_OPTIONS } from "@/lib/cache/tags";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -15,7 +17,7 @@ export type ProjectOverviewItem = {
   name: string;
   code: string | null;
   color: string;
-  status: "active" | "inactive";
+  status: ProjectStatus;
   hourlyBudget: number | null;
   amountBudget: number | null;
   budgetAlertBasis: BudgetAlertBasis;
@@ -66,7 +68,7 @@ export type ProjectDetail = {
   name: string;
   code: string | null;
   color: string;
-  status: "active" | "inactive";
+  status: ProjectStatus;
   hourlyBudget: number | null;
   amountBudget: number | null;
   budgetAlertBasis: BudgetAlertBasis;
@@ -86,6 +88,7 @@ type ProjectRow = {
   code: string | null;
   color: string;
   status: "active" | "inactive";
+  archived_at: string | null;
   hourly_budget: string | number | null;
   amount_budget: string | number | null;
   budget_alert_basis: BudgetAlertBasis;
@@ -154,6 +157,7 @@ type ProjectDetailRow = {
   code: string | null;
   color: string;
   status: "active" | "inactive";
+  archived_at: string | null;
   hourly_budget: string | number | null;
   amount_budget: string | number | null;
   budget_alert_basis: BudgetAlertBasis;
@@ -244,7 +248,7 @@ export async function getProjectDetail(
   const { data: projectData, error: projectError } = await admin
     .from("projects")
     .select(
-      "id, customer_id, name, code, color, status, hourly_budget, amount_budget, budget_alert_basis, default_hourly_rate",
+      "id, customer_id, name, code, color, status, archived_at, hourly_budget, amount_budget, budget_alert_basis, default_hourly_rate",
     )
     .eq("id", projectId)
     .maybeSingle();
@@ -287,7 +291,7 @@ export async function getProjectDetail(
     name: project.name,
     code: project.code,
     color: project.color,
-    status: project.status,
+    status: projectStatusFromRow(project),
     hourlyBudget: toNumber(project.hourly_budget),
     amountBudget: toNumber(project.amount_budget),
     budgetAlertBasis: project.budget_alert_basis,
@@ -317,7 +321,7 @@ export async function getProjectOverview(): Promise<ProjectOverviewItem[]> {
   const { data: projectsData, error: projectsError } = await admin
     .from("projects")
     .select(
-      "id, name, code, color, status, hourly_budget, amount_budget, budget_alert_basis, default_hourly_rate, customers(name)",
+      "id, name, code, color, status, archived_at, hourly_budget, amount_budget, budget_alert_basis, default_hourly_rate, customers(name)",
     )
     .order("name", { ascending: true });
 
@@ -410,7 +414,7 @@ export async function getProjectOverview(): Promise<ProjectOverviewItem[]> {
         name: project.name,
         code: project.code,
         color: project.color,
-        status: project.status,
+        status: projectStatusFromRow(project),
         hourlyBudget,
         amountBudget,
         budgetAlertBasis: budgetSummary.basis,

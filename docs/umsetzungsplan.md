@@ -168,3 +168,13 @@
 - Naechster Entwicklungsschritt: Magic-Link-Test mit freigeschalteter
   Admin-Mail auf Preview und danach angemeldete V1-Abnahme gegen das
   Konzeptionsinterview.
+
+## Projektarchiv (2026-11-18)
+
+- Implementiert: Archiv-Reiter, Statusauswahl mit Bestaetigung, Wiederherstellung,
+  historische Berichtsauswahl und Erhalt der Aufgabenfreigaben.
+- Migration: `20261118120000_project_archive.sql`; vor dem App-Deployment anwenden.
+- Datenbank-Integrationspruefung: `supabase/tests/project_archive.sql`, ausschliesslich
+  in einer isolierten Testdatenbank ausfuehren.
+- PROD-Migration und angemeldeter Production-Funktionstest stehen noch aus.
+- Einfuehrung/Reihenfolge: siehe `docs/projektarchiv-einfuehrung.md`.

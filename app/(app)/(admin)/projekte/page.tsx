@@ -1,3 +1,4 @@
+import { projectStatusLabels, type ProjectStatus } from "@/features/projects/status";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -63,7 +64,7 @@ function formatPercent(value: number | null) {
   }).format(value)} %`;
 }
 
-function StatusBadge({ status }: { status: "active" | "inactive" }) {
+function StatusBadge({ status }: { status: ProjectStatus }) {
   const isActive = status === "active";
 
   return (
@@ -74,7 +75,7 @@ function StatusBadge({ status }: { status: "active" | "inactive" }) {
           : "inline-flex min-h-7 items-center rounded-md bg-secondary px-2.5 text-xs font-medium text-muted-foreground"
       }
     >
-      {isActive ? "Aktiv" : "Inaktiv"}
+      {projectStatusLabels[status]}
     </span>
   );
 }
@@ -251,20 +252,23 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
     getProjectOverview(),
     searchParams,
   ]);
-  const activeStatus = params.status === "inactive" ? "inactive" : "active";
+  const activeStatus = params.status === "archived"
+    ? "archived"
+    : params.status === "inactive" ? "inactive" : "active";
   const activeProjects = projects.filter((project) => project.status === "active");
   const inactiveProjects = projects.filter(
     (project) => project.status === "inactive",
   );
-  const visibleProjects =
-    activeStatus === "active" ? activeProjects : inactiveProjects;
+  const archivedProjects = projects.filter((project) => project.status === "archived");
+  const visibleProjects = projects.filter((project) => project.status === activeStatus);
   const budgetAttentionCount = projects.filter(
     (project) =>
-      project.budgetStatus === "warning-80" ||
-      project.budgetStatus === "exceeded",
+      project.status !== "archived" &&
+      (project.budgetStatus === "warning-80" || project.budgetStatus === "exceeded"),
   ).length;
   const activeTaskCount = projects.reduce(
-    (total, project) => total + project.activeTaskCount,
+    (total, project) =>
+      total + (project.status === "active" ? project.activeTaskCount : 0),
     0,
   );
   const errorMessage = params.error ? errorMessages[params.error] : undefined;
@@ -282,7 +286,7 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
             {projects.length} Projekte · {activeProjects.length} aktiv ·{" "}
-            {budgetAttentionCount} mit Budgethinweis
+            {archivedProjects.length} archiviert · {budgetAttentionCount} mit Budgethinweis
           </p>
         </div>
 
@@ -319,6 +323,7 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
           activeStatus={activeStatus}
           basePath="/projekte"
           inactiveCount={inactiveProjects.length}
+          archivedCount={archivedProjects.length}
         />
       </div>
 
@@ -338,7 +343,9 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
         <div className="rounded-md border bg-card px-4 py-8 text-sm text-muted-foreground">
           {activeStatus === "active"
             ? "Keine aktiven Projekte vorhanden."
-            : "Keine inaktiven Projekte vorhanden."}
+            : activeStatus === "archived"
+              ? "Keine archivierten Projekte vorhanden."
+              : "Keine inaktiven Projekte vorhanden."}
         </div>
       ) : (
         <div className="grid gap-3">

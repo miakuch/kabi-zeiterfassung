@@ -31,6 +31,7 @@ const errorMessages: Record<string, string> = {
     "Die Aufgabe kann nicht gelöscht werden, weil bereits Zeiten oder Timer-Entwürfe darauf verweisen.",
   "aufgabe-nicht-gefunden": "Diese Aufgabe wurde nicht gefunden.",
   "aufgabe-vergeben": "Diese Aufgabe existiert in diesem Projekt bereits.",
+  "archiv-timer": "Das Projekt kann noch nicht archiviert werden. Bitte zuerst alle laufenden oder ungespeicherten Timer dieses Projekts speichern oder verwerfen.",
   "speichern": "Das Projekt konnte nicht gespeichert werden.",
   "stundensatz": "Der Stundensatz konnte nicht gespeichert werden.",
   "ungueltige-eingabe": "Bitte prüfe die Eingaben.",
@@ -97,7 +98,7 @@ export function ProjectDetailPage({
         <div>
           <Link
             className="inline-flex min-h-9 items-center gap-2 rounded-md border bg-card px-3 text-sm font-medium text-muted-foreground transition hover:bg-secondary"
-            href="/projekte"
+            href={project?.status === "archived" ? "/projekte?status=archived" : project?.status === "inactive" ? "/projekte?status=inactive" : "/projekte"}
           >
             <ArrowLeft className="size-4" aria-hidden="true" />
             Zurück

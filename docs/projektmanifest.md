@@ -178,6 +178,20 @@ Aufgaben werden in Auswahlfeldern kontextreich angezeigt:
 - kompakt: `Kunde / Projektkennung / Aufgabe`
 - ohne Kennung: `Kunde / Projektname / Aufgabe`
 
+### Ergaenzung Projektarchiv (freigegeben am 2026-11-18)
+
+- Projektstatus in der Oberflaeche: aktiv, inaktiv und archiviert.
+- Inaktiv bedeutet geplant oder pausiert; archiviert bedeutet abgeschlossen.
+- Die Projektverwaltung hat drei getrennte Reiter mit Anzahl.
+- Inaktive und archivierte Projekte sind nicht fuer neue Zeitbuchungen verfuegbar.
+- Status und Freigaben der Aufgaben bleiben bei Statuswechseln erhalten.
+- Historische Zeiten bleiben unter den bestehenden Rollenrechten sichtbar und
+  korrigierbar; Berichte und Exporte beruecksichtigen archivierte Projekte weiter.
+- Archivierte Projekte werden im Berichts-Projektfilter gekennzeichnet.
+- Archivieren wird beim Speichern bestaetigt und ist bei vorhandenen laufenden
+  oder gestoppten Timer-Entwuerfen blockiert. Wiederherstellen ist moeglich.
+- Archivierung ist keine Monatsabschluss- oder Export-Sperre.
+
 ## Berichte und Exporte
 
 Berichte sind fuer Mitarbeitende und Admins derselbe Menuepunkt, zeigen aber

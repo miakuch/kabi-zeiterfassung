@@ -16,6 +16,7 @@ export type ReportProjectOption = {
   customerId: string;
   name: string;
   code: string | null;
+  archivedAt?: string | null;
 };
 
 export type ReportTaskOption = {
@@ -47,6 +48,7 @@ type RelatedProject = {
   id: string;
   name: string;
   code: string | null;
+  archived_at: string | null;
   customers: RelatedCustomer | RelatedCustomer[] | null;
 };
 
@@ -96,6 +98,7 @@ function buildReportFilterOptions({
       customerId: customer.id,
       name: project.name,
       code: project.code,
+      archivedAt: project.archived_at,
     });
     tasks.push({
       id: task.id,
@@ -130,7 +133,7 @@ const getAdminReportFilterOptionsCached = unstable_cache(
     ] = await Promise.all([
       admin
         .from("tasks")
-        .select("id, name, project_id, projects(id, name, code, customers(id, name))")
+        .select("id, name, project_id, projects(id, name, code, archived_at, customers(id, name))")
         .order("name"),
       admin.from("employees").select("id, name, email, status").order("name"),
     ]);
@@ -159,7 +162,7 @@ export async function getReportFilterOptions(
   const supabase = await createSupabaseServerClient();
   const { data: tasksData, error: tasksError } = await supabase
     .from("tasks")
-    .select("id, name, project_id, projects(id, name, code, customers(id, name))")
+    .select("id, name, project_id, projects(id, name, code, archived_at, customers(id, name))")
     .order("name");
 
   if (tasksError) {

@@ -10,6 +10,7 @@ import {
   CACHE_TAG_TASK_PICKER_ITEMS,
 } from "@/lib/cache/tags";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import type { ProjectStatus } from "./status";
 import {
   formValue,
   formValues,
@@ -18,17 +19,18 @@ import {
   projectIdSchema,
   projectStatusSchema,
   taskIdSchema,
+  taskStatusSchema,
   taskFormSchema,
 } from "./schema";
 
 function projectsPath(
   params: Record<string, string>,
-  listStatus: "active" | "inactive" = "active",
+  listStatus: ProjectStatus = "active",
 ) {
   const searchParams = new URLSearchParams(params);
 
-  if (listStatus === "inactive") {
-    searchParams.set("status", "inactive");
+  if (listStatus !== "active") {
+    searchParams.set("status", listStatus);
   }
 
   const query = searchParams.toString();
@@ -72,23 +74,13 @@ function projectPayload(parsed: z.infer<typeof projectFormSchema>) {
     name: parsed.name,
     code: parsed.code,
     color: parsed.color,
-    status: parsed.status,
+    status: parsed.status === "archived" ? "inactive" : parsed.status,
+    archived_at: parsed.status === "archived" ? new Date().toISOString() : null,
     hourly_budget: parsed.hourlyBudget,
     amount_budget: parsed.amountBudget,
     budget_alert_basis: parsed.budgetAlertBasis,
     default_hourly_rate: parsed.defaultHourlyRate,
   };
-}
-
-async function deactivateProjectTasks(projectId: string) {
-  const admin = createSupabaseAdminClient();
-  const { error } = await admin
-    .from("tasks")
-    .update({ status: "inactive" })
-    .eq("project_id", projectId)
-    .eq("status", "active");
-
-  return error;
 }
 
 export async function createProject(formData: FormData) {
@@ -126,7 +118,7 @@ export async function createProject(formData: FormData) {
     await admin.from("tasks").insert({
       project_id: project.id,
       name: "Allgemein",
-      status: parsed.data.status,
+      status: parsed.data.status === "active" ? "active" : "inactive",
       default_billable: true,
       assignment_mode: "selected",
     });
@@ -171,15 +163,11 @@ export async function updateProject(formData: FormData) {
     .eq("id", parsedId.data);
 
   if (error) {
-    redirect(projectDetailPath(parsedId.data, { error: "speichern" }));
-  }
-
-  if (parsed.data.status === "inactive") {
-    const taskError = await deactivateProjectTasks(parsedId.data);
-
-    if (taskError) {
-      redirect(projectDetailPath(parsedId.data, { error: "speichern" }));
-    }
+    redirect(projectDetailPath(parsedId.data, {
+      error: error.message?.includes("PROJECT_HAS_TIMER_DRAFT")
+        ? "archiv-timer"
+        : "speichern",
+    }));
   }
 
   revalidatePath("/projekte");
@@ -341,7 +329,7 @@ export async function deleteTask(formData: FormData) {
 
   const parsedProjectId = projectIdSchema.safeParse(formValue(formData, "projectId"));
   const parsedTaskId = taskIdSchema.safeParse(formValue(formData, "taskId"));
-  const parsedTaskStatus = projectStatusSchema.safeParse(
+  const parsedTaskStatus = taskStatusSchema.safeParse(
     formValue(formData, "taskStatus") || "active",
   );
   const taskStatus = parsedTaskStatus.success ? parsedTaskStatus.data : "active";

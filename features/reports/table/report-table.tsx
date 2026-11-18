@@ -521,7 +521,7 @@ export function ReportTable({
                     <option value="">Projekt auswählen</option>
                     {options.projects.map((project) => (
                       <option key={project.id} value={project.id}>
-                        {project.code ? `${project.code} - ${project.name}` : project.name}
+                        {project.code ? `${project.code} - ${project.name}` : project.name}{project.archivedAt ? " (archiviert)" : ""}
                       </option>
                     ))}
                   </select>

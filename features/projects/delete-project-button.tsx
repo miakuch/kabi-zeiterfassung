@@ -1,5 +1,6 @@
 "use client";
 
+import type { ProjectStatus } from "./status";
 import { useState } from "react";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,7 @@ import { deleteProject } from "./actions";
 type DeleteProjectButtonProps = {
   projectId: string;
   projectLabel: string;
-  listStatus: "active" | "inactive";
+  listStatus: ProjectStatus;
 };
 
 export function DeleteProjectButton({

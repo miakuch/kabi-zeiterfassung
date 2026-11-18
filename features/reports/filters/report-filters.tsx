@@ -30,6 +30,7 @@ type ReportFilterOptions = {
     customerId: string;
     name: string;
     code: string | null;
+    archivedAt?: string | null;
   }>;
   tasks: Array<{
     id: string;
@@ -62,7 +63,8 @@ type MultiSelectOption = {
 };
 
 function projectLabel(project: ReportFilterOptions["projects"][number]) {
-  return project.code ? `${project.code} - ${project.name}` : project.name;
+  const label = project.code ? `${project.code} - ${project.name}` : project.name;
+  return project.archivedAt ? `${label} (archiviert)` : label;
 }
 
 function projectMatchesCustomer(

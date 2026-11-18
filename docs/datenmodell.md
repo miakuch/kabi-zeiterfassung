@@ -55,6 +55,7 @@ Felder:
 - code
 - color
 - status: `active` oder `inactive`
+- archived_at: optionaler Archivierungszeitpunkt; gesetzt nur bei `inactive`
 - hourly_budget
 - amount_budget
 - budget_alert_basis: `hours`, `amount` oder leer
@@ -74,6 +75,16 @@ Regeln:
 - Budgetwarnlogik nutzt genau eine fuehrende Budgetart
 - Budgetverbrauch und Restbudget beruecksichtigen nur abrechenbare
   Zeiteintraege; nicht abrechenbare Stunden werden separat ausgewiesen
+
+Archivierung (2026-11-18): `archived_at` unterscheidet archivierte von lediglich
+inaktiven Projekten. Die Anwendung stellt dies als dritten Status `archived` dar.
+Der gemeinsame Enum `record_status` fuer Kunden, Mitarbeitende und Aufgaben bleibt
+unveraendert. Bestehende Datensaetze erhalten `archived_at = null`.
+Datenbank-Trigger blockieren Archivierung bei Timer-Entwuerfen und neue Buchungen
+auf inaktive/archivierte Projekte. Historische Bearbeitung mit unveraenderter Aufgabe
+bleibt moeglich. RLS fuer historische Kontexte und finanzielle Daten bleibt erhalten;
+authenticated erhaelt nur einen zusaetzlichen SELECT-Spaltengrant fuer `archived_at`.
+Aufgabenstatus und Freigaben werden beim Statuswechsel nicht geaendert.
 
 ### project_member_rates
 

@@ -1,10 +1,12 @@
+import type { ProjectStatus } from "@/features/projects/status";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 type StatusTabsProps = {
-  activeStatus: "active" | "inactive";
+  activeStatus: ProjectStatus;
   activeCount: number;
   inactiveCount: number;
+  archivedCount?: number;
   basePath: string;
   queryKey?: string;
 };
@@ -16,13 +18,13 @@ function hrefForStatus({
 }: {
   basePath: string;
   queryKey: string;
-  status: "active" | "inactive";
+  status: ProjectStatus;
 }) {
   if (status === "active") {
     return basePath;
   }
 
-  const params = new URLSearchParams({ [queryKey]: "inactive" });
+  const params = new URLSearchParams({ [queryKey]: status });
 
   return `${basePath}?${params.toString()}`;
 }
@@ -31,12 +33,16 @@ export function StatusTabs({
   activeStatus,
   activeCount,
   inactiveCount,
+  archivedCount,
   basePath,
   queryKey = "status",
 }: StatusTabsProps) {
   const tabs = [
     { status: "active" as const, label: "Aktiv", count: activeCount },
     { status: "inactive" as const, label: "Inaktiv", count: inactiveCount },
+    ...(archivedCount === undefined
+      ? []
+      : [{ status: "archived" as const, label: "Archiv", count: archivedCount }]),
   ];
 
   return (

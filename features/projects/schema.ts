@@ -5,7 +5,7 @@ export const taskIdSchema = z.string().uuid();
 export const customerIdSchema = z.string().uuid();
 export const employeeIdSchema = z.string().uuid();
 
-export const projectStatusSchema = z.enum(["active", "inactive"]);
+export const projectStatusSchema = z.enum(["active", "inactive", "archived"]);
 export const budgetAlertBasisSchema = z.enum(["hours", "amount"]).nullable();
 export const taskStatusSchema = z.enum(["active", "inactive"]);
 export const assignmentModeSchema = z.enum(["all", "selected"]);

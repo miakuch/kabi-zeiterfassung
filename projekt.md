@@ -183,7 +183,7 @@ Projekte haben:
 - Projektname
 - optionale Projektkennung
 - Farbe
-- Status aktiv/inaktiv
+- Status aktiv/inaktiv/archiviert
 - optionales Stundenbudget
 - optionales Geldbudget
 - fuehrende Budgetart fuer Warnungen: Stunden oder Geld
@@ -446,3 +446,15 @@ Nicht Teil von V1:
 - App-Geruest und Supabase-Client final anbinden
 - Vercel Production-Domain in Vercel gegenpruefen; aktueller Start ist ueber `https://kabi-zeiterfassung.vercel.app` vorgesehen
 - Eigene Subdomain `zeiterfassung.kabi-consulting.de` ist fuer den aktuellen Start zurueckgestellt
+
+## Ergaenzung Projektarchiv (2026-11-18)
+
+Die Projektverwaltung trennt Aktiv, Inaktiv und Archiv mit eigenen Reitern.
+Inaktive Projekte sind geplant oder pausiert, archivierte Projekte abgeschlossen.
+Der Status wird in der Projektbearbeitung ausgewaehlt und mit Speichern uebernommen.
+Archivieren erfordert eine Bestaetigung und ist bei Timer-Entwuerfen blockiert.
+Wiederherstellen auf Inaktiv oder Aktiv ist moeglich. Aufgabenstatus und Freigaben
+bleiben erhalten. Neue Zeitbuchungen sind nur fuer aktive Projekte moeglich.
+Historische Zeiten bleiben sichtbar, auswertbar, exportierbar und gemaess den
+bestehenden Rollenrechten korrigierbar. Archivierte Projekte werden im
+Berichtsfilter mit `(archiviert)` gekennzeichnet. Die Loeschregeln bleiben bestehen.

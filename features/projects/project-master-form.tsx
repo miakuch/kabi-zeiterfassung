@@ -1,12 +1,13 @@
 "use client";
 
 import { useMemo, useState, type FormEvent } from "react";
-import { Power, Save } from "lucide-react";
+import { Save } from "lucide-react";
 import {
   DirtyDiscardButton,
   DirtySaveButton,
   UnsavedBadge,
 } from "@/components/dirty-save";
+import { projectStatusLabels, type ProjectStatus } from "./status";
 import { createProject, updateProject } from "./actions";
 import type { ProjectDetail, ProjectDetailOptions } from "./queries";
 
@@ -47,7 +48,6 @@ export function ProjectMasterForm({
     Object.entries(values).some(
       ([key, value]) => value !== initialValues[key as keyof typeof values],
     );
-  const isActive = values.status === "active";
 
   function updateValue(key: keyof typeof values, value: string) {
     setValues((current) => ({ ...current, [key]: value }));
@@ -55,6 +55,16 @@ export function ProjectMasterForm({
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     if (isEdit && !hasUnsavedChanges) {
+      event.preventDefault();
+      return;
+    }
+    if (
+      values.status === "archived" &&
+      initialValues.status !== "archived" &&
+      !window.confirm(
+        "Projekt archivieren?\n\nDas Projekt wird ins Archiv verschoben und steht für neue Zeitbuchungen nicht mehr zur Verfügung. Vorhandene Zeiten, Aufgaben und Auswertungen bleiben erhalten. Du kannst das Projekt später wieder aktivieren.",
+      )
+    ) {
       event.preventDefault();
     }
   }
@@ -69,7 +79,29 @@ export function ProjectMasterForm({
       {project?.id ? (
         <input name="projectId" type="hidden" value={project.id} />
       ) : null}
-      <input name="status" type="hidden" value={values.status} />
+      <label className="grid gap-1 text-sm font-medium">
+        Projektstatus
+        <select
+          className="min-h-11 rounded-md border bg-background px-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/25 sm:max-w-xs"
+          name="status"
+          onChange={(event) => updateValue("status", event.target.value)}
+          value={values.status}
+          aria-describedby="project-status-description"
+        >
+          {Object.entries(projectStatusLabels).map(([status, label]) => (
+            <option key={status} value={status}>
+              {label}
+            </option>
+          ))}
+        </select>
+        <span id="project-status-description" className="text-sm font-normal text-muted-foreground">
+          {{
+            active: "Für die Zeiterfassung verfügbar. Aufgabenfreigaben gelten weiterhin.",
+            inactive: "Geplant oder pausiert. Projekt und Aufgaben können vorbereitet werden; neue Zeitbuchungen sind nicht möglich.",
+            archived: "Abgeschlossen. Vorhandene Zeiten bleiben in Berichten und Exporten verfügbar; neue Zeitbuchungen sind nicht möglich.",
+          }[values.status as ProjectStatus]}
+        </span>
+      </label>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(180px,1fr)_minmax(220px,1.15fr)_minmax(160px,0.75fr)_110px]">
         <label className="grid gap-1 text-sm font-medium">
@@ -202,19 +234,6 @@ export function ProjectMasterForm({
 
       <div className="flex items-center justify-end gap-3">
         {hasUnsavedChanges ? <UnsavedBadge /> : null}
-        <button
-          aria-label={isActive ? "Projekt deaktivieren" : "Projekt aktivieren"}
-          className={
-            isActive
-              ? "inline-flex size-10 items-center justify-center rounded-md border-2 border-primary bg-primary/10 text-primary transition hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              : "inline-flex size-10 items-center justify-center rounded-md border bg-background text-muted-foreground transition hover:bg-secondary hover:text-secondary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          }
-          onClick={() => updateValue("status", isActive ? "inactive" : "active")}
-          title={isActive ? "Projekt deaktivieren" : "Projekt aktivieren"}
-          type="button"
-        >
-          <Power className={isActive ? "size-5 stroke-[3]" : "size-4"} aria-hidden="true" />
-        </button>
         {isEdit ? (
           <>
             <DirtySaveButton isDirty={hasUnsavedChanges} />

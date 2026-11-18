@@ -107,10 +107,14 @@ export async function upsertTimeEntryFromListAction(
     };
   }
 
-  const canBookTask = await canBookTaskForEmployee({
-    employeeId: employee.id,
-    taskId: parsedCommon.value.taskId,
-  });
+  const existing = intent === "edit" && entryId
+    ? await getOwnTimeEntry(entryId, employee.id)
+    : null;
+  const canBookTask = existing?.taskId === parsedCommon.value.taskId ||
+    await canBookTaskForEmployee({
+      employeeId: employee.id,
+      taskId: parsedCommon.value.taskId,
+    });
 
   if (!canBookTask) {
     return {
